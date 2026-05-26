@@ -7,8 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Printer, Download, ArrowLeft } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
+import { downloadInvoicePdf } from "@/lib/invoicePdf";
 
 export function InvoiceDetailPage() {
   const { id } = Route.useParams();
@@ -28,37 +27,7 @@ export function InvoiceDetailPage() {
   if (isLoading || !data) return <p className="text-muted-foreground">Loading...</p>;
   const { invoice, items } = data;
 
-  const downloadPdf = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(18); doc.setFont("helvetica", "bold");
-    doc.text(COMPANY_NAME, 14, 18);
-    doc.setFontSize(11); doc.setFont("helvetica", "normal");
-    doc.text(`Invoice: ${invoice.invoice_number}`, 14, 28);
-    doc.text(`Date: ${invoice.invoice_date}`, 14, 34);
-    doc.text(`Customer: ${invoice.customer_name || "—"}`, 14, 40);
-    doc.text(`Contact: ${invoice.customer_contact || "—"}`, 14, 46);
-
-    autoTable(doc, {
-      startY: 54,
-      head: [["Item", "Serial", "Qty", "Unit", "Subtotal", "GST", "Total"]],
-      body: items.map((r) => [
-        r.item_name, r.serial_number ?? "", r.quantity,
-        fmtMoney(r.unit_price), fmtMoney(r.subtotal),
-        fmtMoney(r.gst_amount), fmtMoney(r.line_total),
-      ]),
-    });
-    const y = (doc as any).lastAutoTable.finalY + 10;
-    doc.text(`Total Qty: ${invoice.total_quantity}`, 140, y);
-    doc.text(`Subtotal: ${fmtMoney(invoice.total_subtotal)}`, 140, y + 6);
-    doc.text(`GST: ${fmtMoney(invoice.total_gst)}`, 140, y + 12);
-    doc.setFont("helvetica", "bold");
-    doc.text(`Grand Total: ${fmtMoney(invoice.grand_total)}`, 140, y + 20);
-    if (invoice.notes) {
-      doc.setFont("helvetica", "normal");
-      doc.text(`Notes: ${invoice.notes}`, 14, y + 30);
-    }
-    doc.save(`${invoice.invoice_number}.pdf`);
-  };
+  const downloadPdf = () => downloadInvoicePdf(invoice, items);
 
   return (
     <div className="space-y-4">
