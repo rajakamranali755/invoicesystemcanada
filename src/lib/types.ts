@@ -3,6 +3,7 @@ export interface Item {
   serial_number: string;
   name: string;
   description: string | null;
+  supplier_company: string;
   price: number;
   gst_percent: number;
   quantity_available: number;
