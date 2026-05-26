@@ -1,9 +1,6 @@
-import { useEffect, useState } from "react";
-import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Package, FileText, Receipt, BarChart3, LogOut } from "lucide-react";
+import { Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { Package, FileText, Receipt, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 
 const COMPANY = "ABC_CANADA COMPANY";
 
@@ -16,38 +13,6 @@ const nav = [
 
 export function AppLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const navigate = useNavigate();
-  const [checking, setChecking] = useState(true);
-  const [email, setEmail] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (!active) return;
-      if (!session) {
-        navigate({ to: "/login", replace: true });
-      } else {
-        setEmail(session.user.email ?? null);
-      }
-    });
-    supabase.auth.getSession().then(({ data }) => {
-      if (!active) return;
-      if (!data.session) {
-        navigate({ to: "/login", replace: true });
-      } else {
-        setEmail(data.session.user.email ?? null);
-        setChecking(false);
-      }
-    });
-    return () => {
-      active = false;
-      sub.subscription.unsubscribe();
-    };
-  }, [navigate]);
-
-  if (checking) {
-    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
-  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -77,20 +42,6 @@ export function AppLayout() {
                 </Link>
               );
             })}
-            <div className="ml-3 pl-3 border-l flex items-center gap-2">
-              {email && <span className="text-xs text-muted-foreground hidden md:inline">{email}</span>}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={async () => {
-                  await supabase.auth.signOut();
-                  navigate({ to: "/login", replace: true });
-                }}
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline ml-1">Sign out</span>
-              </Button>
-            </div>
           </nav>
         </div>
       </header>

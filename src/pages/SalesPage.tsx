@@ -17,6 +17,7 @@ import {
 import { Plus, Trash2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "@tanstack/react-router";
+import { openInvoicePdf } from "@/lib/invoicePdf";
 
 interface Row {
   key: string;
@@ -67,11 +68,13 @@ export function SalesPage() {
   const onPickItem = (key: string, itemId: string) => {
     const it = items.find((x) => x.id === itemId);
     if (!it) return;
+    // Auto 10% markup on the dashboard (purchase) price
+    const sellingPrice = Number((Number(it.price) * 1.1).toFixed(2));
     updateRow(key, {
       item_id: it.id,
       item_name: it.name,
       serial_number: it.serial_number,
-      unit_price: Number(it.price),
+      unit_price: sellingPrice,
       gst_mode: "percent",
       gst_value: Number(it.gst_percent),
       available: it.quantity_available - it.sold_quantity,
@@ -141,12 +144,18 @@ export function SalesPage() {
           sold_quantity: it.sold_quantity + r.quantity,
         }).eq("id", it.id);
       }
-      return inv.id as string;
+      return { id: inv.id as string, invoice: inv, lines };
     },
-    onSuccess: (id) => {
+    onSuccess: ({ id, invoice, lines }) => {
       qc.invalidateQueries({ queryKey: ["items"] });
       qc.invalidateQueries({ queryKey: ["invoices"] });
       toast.success("Invoice created");
+      // Open printable PDF in a new tab
+      try {
+        openInvoicePdf(invoice as any, lines as any);
+      } catch (e) {
+        console.error("PDF open failed", e);
+      }
       navigate({ to: "/invoices/$id", params: { id } });
     },
     onError: (e: any) => toast.error(e.message),

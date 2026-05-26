@@ -17,6 +17,8 @@ export function UnsoldReportPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [search, setSearch] = useState("");
+  const [taxYear, setTaxYear] = useState<string>("");
+  const [lastTaxDate, setLastTaxDate] = useState<string>("");
 
   const { data: items = [] } = useQuery({
     queryKey: ["items"],
@@ -33,6 +35,14 @@ export function UnsoldReportPage() {
       .filter((i) => {
         if (from && i.created_at < from) return false;
         if (to && i.created_at > to + "T23:59:59") return false;
+        if (taxYear) {
+          const y = new Date(i.created_at).getFullYear().toString();
+          if (y !== taxYear) return false;
+        }
+        if (lastTaxDate) {
+          // Only items added AFTER the last filed tax date (not yet claimed)
+          if (i.created_at <= lastTaxDate + "T23:59:59") return false;
+        }
         if (q && !i.name.toLowerCase().includes(q) && !i.serial_number.toLowerCase().includes(q)) return false;
         return true;
       })
@@ -49,6 +59,12 @@ export function UnsoldReportPage() {
     const gst = rows.reduce((s, r) => s + r.gstReclaim, 0);
     return { val, gst };
   }, [rows]);
+
+  const yearOptions = useMemo(() => {
+    const years = new Set<string>();
+    for (const i of items) years.add(new Date(i.created_at).getFullYear().toString());
+    return Array.from(years).sort().reverse();
+  }, [items]);
 
   const exportPdf = () => {
     const doc = new jsPDF({ orientation: "landscape" });
@@ -104,10 +120,26 @@ export function UnsoldReportPage() {
       </div>
 
       <Card className="print:hidden">
-        <CardContent className="p-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <CardContent className="p-6 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <div><Label>From (date added)</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
           <div><Label>To</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
-          <div className="md:col-span-2">
+          <div>
+            <Label>Tax Year</Label>
+            <select
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+              value={taxYear}
+              onChange={(e) => setTaxYear(e.target.value)}
+            >
+              <option value="">All years</option>
+              {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </div>
+          <div>
+            <Label>Last Tax Filing Date</Label>
+            <Input type="date" value={lastTaxDate} onChange={(e) => setLastTaxDate(e.target.value)} />
+            <p className="text-[10px] text-muted-foreground mt-1">Shows only items added after this date.</p>
+          </div>
+          <div className="lg:col-span-2">
             <Label>Search</Label>
             <div className="relative"><Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input className="pl-8" placeholder="Name or serial #" value={search} onChange={(e) => setSearch(e.target.value)} /></div>
