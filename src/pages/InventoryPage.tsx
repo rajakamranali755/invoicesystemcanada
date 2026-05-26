@@ -22,13 +22,14 @@ type FormState = {
   serial_number: string;
   name: string;
   description: string;
+  supplier_company: string;
   price: string;
   gst_percent: string;
   quantity_available: string;
 };
 
 const empty: FormState = {
-  serial_number: "", name: "", description: "",
+  serial_number: "", name: "", description: "", supplier_company: "",
   price: "0", gst_percent: "0", quantity_available: "0",
 };
 
@@ -53,6 +54,7 @@ export function InventoryPage() {
         serial_number: f.serial_number.trim(),
         name: f.name.trim(),
         description: f.description.trim() || null,
+        supplier_company: f.supplier_company.trim(),
         price: parseFloat(f.price) || 0,
         gst_percent: parseFloat(f.gst_percent) || 0,
         quantity_available: parseInt(f.quantity_available) || 0,
@@ -133,12 +135,16 @@ export function InventoryPage() {
                 <Input value={form.serial_number} onChange={(e) => setForm({ ...form, serial_number: e.target.value })} />
               </div>
               <div>
+                <Label>Supplier Company (purchased from)</Label>
+                <Input value={form.supplier_company} onChange={(e) => setForm({ ...form, supplier_company: e.target.value })} />
+              </div>
+              <div>
                 <Label>Quantity Available</Label>
                 <Input type="number" value={form.quantity_available}
                   onChange={(e) => setForm({ ...form, quantity_available: e.target.value })} />
               </div>
               <div>
-                <Label>Price</Label>
+                <Label>Purchase Price</Label>
                 <Input type="number" step="0.01" value={form.price}
                   onChange={(e) => setForm({ ...form, price: e.target.value })} />
               </div>
@@ -186,6 +192,7 @@ export function InventoryPage() {
                   <TableRow>
                     <TableHead>Serial #</TableHead>
                     <TableHead>Name</TableHead>
+                    <TableHead>Supplier</TableHead>
                     <TableHead className="text-right">Price</TableHead>
                     <TableHead className="text-right">GST %</TableHead>
                     <TableHead className="text-right">GST Amt</TableHead>
@@ -197,7 +204,7 @@ export function InventoryPage() {
                 </TableHeader>
                 <TableBody>
                   {filtered.length === 0 && (
-                    <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No items.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">No items.</TableCell></TableRow>
                   )}
                   {filtered.map((i) => {
                     const remaining = i.quantity_available - i.sold_quantity;
@@ -206,6 +213,7 @@ export function InventoryPage() {
                       <TableRow key={i.id}>
                         <TableCell className="font-mono text-xs">{i.serial_number}</TableCell>
                         <TableCell className="font-medium">{i.name}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{i.supplier_company || "—"}</TableCell>
                         <TableCell className="text-right">{fmtMoney(i.price)}</TableCell>
                         <TableCell className="text-right">{i.gst_percent}%</TableCell>
                         <TableCell className="text-right">{fmtMoney(gstAmt)}</TableCell>
@@ -217,7 +225,9 @@ export function InventoryPage() {
                             <Button size="icon" variant="ghost" onClick={() => {
                               setForm({
                                 id: i.id, serial_number: i.serial_number, name: i.name,
-                                description: i.description ?? "", price: String(i.price),
+                                description: i.description ?? "",
+                                supplier_company: i.supplier_company ?? "",
+                                price: String(i.price),
                                 gst_percent: String(i.gst_percent),
                                 quantity_available: String(i.quantity_available),
                               });
