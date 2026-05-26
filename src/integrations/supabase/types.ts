@@ -130,6 +130,7 @@ export type Database = {
           quantity_available: number
           serial_number: string
           sold_quantity: number
+          supplier_company: string
           updated_at: string
         }
         Insert: {
@@ -142,6 +143,7 @@ export type Database = {
           quantity_available?: number
           serial_number: string
           sold_quantity?: number
+          supplier_company?: string
           updated_at?: string
         }
         Update: {
@@ -154,6 +156,7 @@ export type Database = {
           quantity_available?: number
           serial_number?: string
           sold_quantity?: number
+          supplier_company?: string
           updated_at?: string
         }
         Relationships: []
