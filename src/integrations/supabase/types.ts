@@ -14,13 +14,156 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      invoice_items: {
+        Row: {
+          created_at: string
+          gst_amount: number
+          gst_mode: string
+          gst_value: number
+          id: string
+          invoice_id: string
+          item_id: string | null
+          item_name: string
+          line_total: number
+          quantity: number
+          serial_number: string | null
+          subtotal: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          gst_amount?: number
+          gst_mode?: string
+          gst_value?: number
+          id?: string
+          invoice_id: string
+          item_id?: string | null
+          item_name: string
+          line_total?: number
+          quantity?: number
+          serial_number?: string | null
+          subtotal?: number
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string
+          gst_amount?: number
+          gst_mode?: string
+          gst_value?: number
+          id?: string
+          invoice_id?: string
+          item_id?: string | null
+          item_name?: string
+          line_total?: number
+          quantity?: number
+          serial_number?: string | null
+          subtotal?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          created_at: string
+          customer_contact: string
+          customer_name: string
+          grand_total: number
+          id: string
+          invoice_date: string
+          invoice_number: string
+          notes: string | null
+          total_gst: number
+          total_quantity: number
+          total_subtotal: number
+        }
+        Insert: {
+          created_at?: string
+          customer_contact?: string
+          customer_name?: string
+          grand_total?: number
+          id?: string
+          invoice_date?: string
+          invoice_number: string
+          notes?: string | null
+          total_gst?: number
+          total_quantity?: number
+          total_subtotal?: number
+        }
+        Update: {
+          created_at?: string
+          customer_contact?: string
+          customer_name?: string
+          grand_total?: number
+          id?: string
+          invoice_date?: string
+          invoice_number?: string
+          notes?: string | null
+          total_gst?: number
+          total_quantity?: number
+          total_subtotal?: number
+        }
+        Relationships: []
+      }
+      items: {
+        Row: {
+          created_at: string
+          description: string | null
+          gst_percent: number
+          id: string
+          name: string
+          price: number
+          quantity_available: number
+          serial_number: string
+          sold_quantity: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          gst_percent?: number
+          id?: string
+          name: string
+          price?: number
+          quantity_available?: number
+          serial_number: string
+          sold_quantity?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          gst_percent?: number
+          id?: string
+          name?: string
+          price?: number
+          quantity_available?: number
+          serial_number?: string
+          sold_quantity?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_invoice_number: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never
