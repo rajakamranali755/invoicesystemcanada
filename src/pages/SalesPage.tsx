@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Item } from "@/lib/types";
+import type { Company, CompanyService } from "@/lib/types";
 import { fmtMoney } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,21 +21,18 @@ import { openInvoicePdf } from "@/lib/invoicePdf";
 
 interface Row {
   key: string;
-  item_id: string | null;
+  service_id: string | null;
   item_name: string;
-  serial_number: string;
   quantity: number;
   unit_price: number;
   gst_mode: "percent" | "amount";
   gst_value: number;
-  available: number;
 }
 
 const newRow = (): Row => ({
   key: Math.random().toString(36).slice(2),
-  item_id: null, item_name: "", serial_number: "",
-  quantity: 1, unit_price: 0, gst_mode: "percent", gst_value: 0,
-  available: 0,
+  service_id: null, item_name: "",
+  quantity: 1, unit_price: 0, gst_mode: "percent", gst_value: 13,
 });
 
 function calcRow(r: Row) {
@@ -48,36 +45,51 @@ export function SalesPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [rows, setRows] = useState<Row[]>([newRow()]);
+  const [companyId, setCompanyId] = useState<string>("");
   const [customerName, setCustomerName] = useState("");
   const [customerContact, setCustomerContact] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerTaxNumber, setCustomerTaxNumber] = useState("");
+  const [amountPaid, setAmountPaid] = useState(0);
   const [notes, setNotes] = useState("");
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().slice(0, 10));
 
-  const { data: items = [] } = useQuery({
-    queryKey: ["items"],
+  const { data: companies = [] } = useQuery({
+    queryKey: ["companies"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("items").select("*").order("name");
+      const { data, error } = await supabase.from("companies").select("*").order("name");
       if (error) throw error;
-      return data as Item[];
+      return data as Company[];
     },
   });
+
+  const { data: services = [] } = useQuery({
+    queryKey: ["company_services", companyId],
+    enabled: !!companyId,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("company_services").select("*").eq("company_id", companyId).order("category");
+      if (error) throw error;
+      return data as CompanyService[];
+    },
+  });
+
+  const selectedCompany = companies.find((c) => c.id === companyId);
+
+  useEffect(() => { setRows([newRow()]); }, [companyId]);
 
   const updateRow = (key: string, patch: Partial<Row>) =>
     setRows((rs) => rs.map((r) => (r.key === key ? { ...r, ...patch } : r)));
 
-  const onPickItem = (key: string, itemId: string) => {
-    const it = items.find((x) => x.id === itemId);
-    if (!it) return;
-    // Auto 10% markup on the dashboard (purchase) price
-    const sellingPrice = Number((Number(it.price) * 1.1).toFixed(2));
+  const onPickService = (key: string, sid: string) => {
+    const s = services.find((x) => x.id === sid);
+    if (!s) return;
     updateRow(key, {
-      item_id: it.id,
-      item_name: it.name,
-      serial_number: it.serial_number,
-      unit_price: sellingPrice,
+      service_id: s.id,
+      item_name: s.description,
+      unit_price: Number(s.default_price),
       gst_mode: "percent",
-      gst_value: Number(it.gst_percent),
-      available: it.quantity_available - it.sold_quantity,
+      gst_value: 13,
       quantity: 1,
     });
   };
@@ -93,27 +105,28 @@ export function SalesPage() {
 
   const save = useMutation({
     mutationFn: async () => {
-      const validRows = rows.filter((r) => r.item_id && r.quantity > 0);
+      if (!companyId) throw new Error("Select a company.");
+      const validRows = rows.filter((r) => r.item_name && r.quantity > 0);
       if (validRows.length === 0) throw new Error("Add at least one item.");
-      for (const r of validRows) {
-        if (r.quantity > r.available) {
-          throw new Error(`${r.item_name}: only ${r.available} in stock.`);
-        }
-      }
       const { data: numRow, error: nErr } = await supabase.rpc("generate_invoice_number");
       if (nErr) throw nErr;
       const invoice_number = numRow as unknown as string;
 
       const { data: inv, error: iErr } = await supabase.from("invoices").insert({
         invoice_number,
+        company_id: companyId,
         customer_name: customerName,
         customer_contact: customerContact,
+        customer_address: customerAddress,
+        customer_email: customerEmail,
+        customer_tax_number: customerTaxNumber,
         notes: notes || null,
         invoice_date: invoiceDate,
         total_quantity: totals.q,
         total_subtotal: totals.sub,
         total_gst: totals.gst,
         grand_total: totals.grand,
+        amount_paid: amountPaid,
       }).select().single();
       if (iErr) throw iErr;
 
@@ -121,9 +134,9 @@ export function SalesPage() {
         const c = calcRow(r);
         return {
           invoice_id: inv.id,
-          item_id: r.item_id,
+          company_service_id: r.service_id,
           item_name: r.item_name,
-          serial_number: r.serial_number,
+          serial_number: null,
           quantity: r.quantity,
           unit_price: r.unit_price,
           gst_mode: r.gst_mode,
@@ -136,23 +149,13 @@ export function SalesPage() {
       const { error: lErr } = await supabase.from("invoice_items").insert(lines);
       if (lErr) throw lErr;
 
-      // Update stock
-      for (const r of validRows) {
-        const it = items.find((x) => x.id === r.item_id);
-        if (!it) continue;
-        await supabase.from("items").update({
-          sold_quantity: it.sold_quantity + r.quantity,
-        }).eq("id", it.id);
-      }
       return { id: inv.id as string, invoice: inv, lines };
     },
     onSuccess: ({ id, invoice, lines }) => {
-      qc.invalidateQueries({ queryKey: ["items"] });
       qc.invalidateQueries({ queryKey: ["invoices"] });
       toast.success("Invoice created");
-      // Open printable PDF in a new tab
       try {
-        openInvoicePdf(invoice as any, lines as any);
+        openInvoicePdf(invoice as never, lines as never, selectedCompany ?? null);
       } catch (e) {
         console.error("PDF open failed", e);
       }
@@ -165,15 +168,33 @@ export function SalesPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">New Invoice</h2>
-        <p className="text-sm text-muted-foreground">Sell items and generate an invoice.</p>
+        <p className="text-sm text-muted-foreground">Pick a company, then add their services.</p>
       </div>
 
       <Card>
-        <CardHeader><CardTitle>Customer & Date</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Issuing Company & Customer</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div><Label>Customer Name</Label><Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} /></div>
-          <div><Label>Customer Contact</Label><Input value={customerContact} onChange={(e) => setCustomerContact(e.target.value)} /></div>
+          <div className="md:col-span-2">
+            <Label>Issuing Company (From)</Label>
+            <Select value={companyId} onValueChange={setCompanyId}>
+              <SelectTrigger><SelectValue placeholder="Select company" /></SelectTrigger>
+              <SelectContent>
+                {companies.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {selectedCompany && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Template: <span className="font-mono">{selectedCompany.design_template}</span> · {services.length} services
+              </p>
+            )}
+          </div>
           <div><Label>Date</Label><Input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} /></div>
+          <div><Label>Amount Paid</Label><Input type="number" step="0.01" value={amountPaid} onChange={(e) => setAmountPaid(parseFloat(e.target.value) || 0)} /></div>
+          <div className="md:col-span-2"><Label>Customer Name (Bill To)</Label><Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} /></div>
+          <div><Label>Contact Person</Label><Input value={customerContact} onChange={(e) => setCustomerContact(e.target.value)} /></div>
+          <div><Label>Customer Email</Label><Input value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} /></div>
+          <div className="md:col-span-2"><Label>Customer Address</Label><Textarea value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} /></div>
+          <div className="md:col-span-2"><Label>Customer HST / Tax #</Label><Input value={customerTaxNumber} onChange={(e) => setCustomerTaxNumber(e.target.value)} /></div>
           <div className="md:col-span-4"><Label>Notes / Remarks</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
         </CardContent>
       </Card>
@@ -189,8 +210,7 @@ export function SalesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="min-w-[200px]">Item</TableHead>
-                <TableHead>Serial #</TableHead>
+                <TableHead className="min-w-[260px]">Service</TableHead>
                 <TableHead className="text-right">Qty</TableHead>
                 <TableHead className="text-right">Unit Price</TableHead>
                 <TableHead>GST Mode</TableHead>
@@ -204,26 +224,21 @@ export function SalesPage() {
             <TableBody>
               {rows.map((r) => {
                 const c = calcRow(r);
-                const overstock = r.item_id && r.quantity > r.available;
                 return (
                   <TableRow key={r.key}>
                     <TableCell>
-                      <Select value={r.item_id ?? ""} onValueChange={(v) => onPickItem(r.key, v)}>
-                        <SelectTrigger><SelectValue placeholder="Select item" /></SelectTrigger>
+                      <Select value={r.service_id ?? ""} onValueChange={(v) => onPickService(r.key, v)} disabled={!companyId}>
+                        <SelectTrigger><SelectValue placeholder={companyId ? "Select service" : "Pick a company first"} /></SelectTrigger>
                         <SelectContent>
-                          {items.map((i) => {
-                            const rem = i.quantity_available - i.sold_quantity;
-                            return (
-                              <SelectItem key={i.id} value={i.id} disabled={rem <= 0}>
-                                {i.name} ({rem} left)
-                              </SelectItem>
-                            );
-                          })}
+                          {services.map((s) => (
+                            <SelectItem key={s.id} value={s.id}>
+                              {s.category ? `[${s.category}] ` : ""}{s.description}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
-                      {overstock && <p className="text-xs text-destructive mt-1">Only {r.available} available</p>}
+                      {r.item_name && !r.service_id && <p className="text-xs text-muted-foreground mt-1">{r.item_name}</p>}
                     </TableCell>
-                    <TableCell className="font-mono text-xs">{r.serial_number}</TableCell>
                     <TableCell><Input type="number" className="w-20 text-right" value={r.quantity}
                       onChange={(e) => updateRow(r.key, { quantity: parseInt(e.target.value) || 0 })} /></TableCell>
                     <TableCell><Input type="number" step="0.01" className="w-24 text-right" value={r.unit_price}
