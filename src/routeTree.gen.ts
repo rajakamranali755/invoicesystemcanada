@@ -13,8 +13,10 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppSalesRouteImport } from './routes/_app.sales'
 import { Route as AppInvoicesRouteImport } from './routes/_app.invoices'
+import { Route as AppInventoryRouteImport } from './routes/_app.inventory'
 import { Route as AppReportsUnsoldRouteImport } from './routes/_app.reports.unsold'
 import { Route as AppInvoicesIdRouteImport } from './routes/_app.invoices.$id'
+import { Route as AppCompaniesIdRouteImport } from './routes/_app.companies.$id'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -35,6 +37,11 @@ const AppInvoicesRoute = AppInvoicesRouteImport.update({
   path: '/invoices',
   getParentRoute: () => AppRoute,
 } as any)
+const AppInventoryRoute = AppInventoryRouteImport.update({
+  id: '/inventory',
+  path: '/inventory',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppReportsUnsoldRoute = AppReportsUnsoldRouteImport.update({
   id: '/reports/unsold',
   path: '/reports/unsold',
@@ -45,41 +52,68 @@ const AppInvoicesIdRoute = AppInvoicesIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AppInvoicesRoute,
 } as any)
+const AppCompaniesIdRoute = AppCompaniesIdRouteImport.update({
+  id: '/companies/$id',
+  path: '/companies/$id',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
+  '/inventory': typeof AppInventoryRoute
   '/invoices': typeof AppInvoicesRouteWithChildren
   '/sales': typeof AppSalesRoute
+  '/companies/$id': typeof AppCompaniesIdRoute
   '/invoices/$id': typeof AppInvoicesIdRoute
   '/reports/unsold': typeof AppReportsUnsoldRoute
 }
 export interface FileRoutesByTo {
+  '/inventory': typeof AppInventoryRoute
   '/invoices': typeof AppInvoicesRouteWithChildren
   '/sales': typeof AppSalesRoute
   '/': typeof AppIndexRoute
+  '/companies/$id': typeof AppCompaniesIdRoute
   '/invoices/$id': typeof AppInvoicesIdRoute
   '/reports/unsold': typeof AppReportsUnsoldRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
+  '/_app/inventory': typeof AppInventoryRoute
   '/_app/invoices': typeof AppInvoicesRouteWithChildren
   '/_app/sales': typeof AppSalesRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/companies/$id': typeof AppCompaniesIdRoute
   '/_app/invoices/$id': typeof AppInvoicesIdRoute
   '/_app/reports/unsold': typeof AppReportsUnsoldRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/invoices' | '/sales' | '/invoices/$id' | '/reports/unsold'
+  fullPaths:
+    | '/'
+    | '/inventory'
+    | '/invoices'
+    | '/sales'
+    | '/companies/$id'
+    | '/invoices/$id'
+    | '/reports/unsold'
   fileRoutesByTo: FileRoutesByTo
-  to: '/invoices' | '/sales' | '/' | '/invoices/$id' | '/reports/unsold'
+  to:
+    | '/inventory'
+    | '/invoices'
+    | '/sales'
+    | '/'
+    | '/companies/$id'
+    | '/invoices/$id'
+    | '/reports/unsold'
   id:
     | '__root__'
     | '/_app'
+    | '/_app/inventory'
     | '/_app/invoices'
     | '/_app/sales'
     | '/_app/'
+    | '/_app/companies/$id'
     | '/_app/invoices/$id'
     | '/_app/reports/unsold'
   fileRoutesById: FileRoutesById
@@ -118,6 +152,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppInvoicesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/inventory': {
+      id: '/_app/inventory'
+      path: '/inventory'
+      fullPath: '/inventory'
+      preLoaderRoute: typeof AppInventoryRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/reports/unsold': {
       id: '/_app/reports/unsold'
       path: '/reports/unsold'
@@ -131,6 +172,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/invoices/$id'
       preLoaderRoute: typeof AppInvoicesIdRouteImport
       parentRoute: typeof AppInvoicesRoute
+    }
+    '/_app/companies/$id': {
+      id: '/_app/companies/$id'
+      path: '/companies/$id'
+      fullPath: '/companies/$id'
+      preLoaderRoute: typeof AppCompaniesIdRouteImport
+      parentRoute: typeof AppRoute
     }
   }
 }
@@ -148,16 +196,20 @@ const AppInvoicesRouteWithChildren = AppInvoicesRoute._addFileChildren(
 )
 
 interface AppRouteChildren {
+  AppInventoryRoute: typeof AppInventoryRoute
   AppInvoicesRoute: typeof AppInvoicesRouteWithChildren
   AppSalesRoute: typeof AppSalesRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppCompaniesIdRoute: typeof AppCompaniesIdRoute
   AppReportsUnsoldRoute: typeof AppReportsUnsoldRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppInventoryRoute: AppInventoryRoute,
   AppInvoicesRoute: AppInvoicesRouteWithChildren,
   AppSalesRoute: AppSalesRoute,
   AppIndexRoute: AppIndexRoute,
+  AppCompaniesIdRoute: AppCompaniesIdRoute,
   AppReportsUnsoldRoute: AppReportsUnsoldRoute,
 }
 
@@ -169,3 +221,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
