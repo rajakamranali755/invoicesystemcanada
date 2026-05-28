@@ -178,6 +178,7 @@ export type Database = {
       }
       invoices: {
         Row: {
+          amount_paid: number
           company_id: string | null
           created_at: string
           customer_address: string
@@ -195,6 +196,7 @@ export type Database = {
           total_subtotal: number
         }
         Insert: {
+          amount_paid?: number
           company_id?: string | null
           created_at?: string
           customer_address?: string
@@ -212,6 +214,7 @@ export type Database = {
           total_subtotal?: number
         }
         Update: {
+          amount_paid?: number
           company_id?: string | null
           created_at?: string
           customer_address?: string
