@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Route } from "@/routes/_app.invoices.$id";
-import type { Invoice, InvoiceItem } from "@/lib/types";
-import { fmtMoney, COMPANY_NAME } from "@/lib/types";
+import type { Invoice, InvoiceItem, Company } from "@/lib/types";
+import { fmtMoney } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Printer, Download, ArrowLeft } from "lucide-react";
@@ -20,14 +20,23 @@ export function InvoiceDetailPage() {
         supabase.from("invoice_items").select("*").eq("invoice_id", id),
       ]);
       if (e1) throw e1; if (e2) throw e2;
-      return { invoice: inv as Invoice, items: items as InvoiceItem[] };
+      const invoice = inv as Invoice;
+      let company: Company | null = null;
+      if (invoice.company_id) {
+        const { data: c } = await supabase.from("companies").select("*").eq("id", invoice.company_id).single();
+        company = (c as Company) ?? null;
+      }
+      return { invoice, items: items as InvoiceItem[], company };
     },
   });
 
   if (isLoading || !data) return <p className="text-muted-foreground">Loading...</p>;
-  const { invoice, items } = data;
+  const { invoice, items, company } = data;
 
-  const downloadPdf = () => downloadInvoicePdf(invoice, items);
+  const downloadPdf = () => downloadInvoicePdf(invoice, items, company);
+  const primary = company?.primary_color || "#0f1b3d";
+  const accent = company?.accent_color || "#c9a84c";
+  const balance = (invoice.grand_total || 0) - (invoice.amount_paid || 0);
 
   return (
     <div className="space-y-4">
@@ -42,13 +51,15 @@ export function InvoiceDetailPage() {
       </div>
 
       <Card className="p-10 print:shadow-none print:border-0">
-        <div className="flex justify-between items-start border-b pb-6 mb-6">
+        <div className="flex justify-between items-start border-b pb-6 mb-6" style={{ borderColor: accent }}>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">{COMPANY_NAME}</h1>
-            <p className="text-sm text-muted-foreground mt-1">Invoice & Inventory Management</p>
+            <h1 className="text-3xl font-bold tracking-tight" style={{ color: primary }}>{company?.name || "Company"}</h1>
+            <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{company?.address}</p>
+            <p className="text-xs text-muted-foreground mt-1">{company?.phone} · {company?.email}</p>
+            {company?.tax_number && <p className="text-xs text-muted-foreground">HST: {company.tax_number}</p>}
           </div>
           <div className="text-right">
-            <p className="text-2xl font-bold">INVOICE</p>
+            <p className="text-2xl font-bold" style={{ color: primary }}>INVOICE</p>
             <p className="font-mono text-sm mt-1">{invoice.invoice_number}</p>
             <p className="text-sm text-muted-foreground">{invoice.invoice_date}</p>
           </div>
@@ -56,34 +67,35 @@ export function InvoiceDetailPage() {
 
         <div className="grid grid-cols-2 gap-6 mb-6">
           <div>
-            <p className="text-xs uppercase text-muted-foreground mb-1">Bill To</p>
+            <p className="text-xs uppercase mb-1" style={{ color: primary }}>Bill To</p>
             <p className="font-semibold">{invoice.customer_name || "—"}</p>
+            {invoice.customer_address && <p className="text-sm text-muted-foreground whitespace-pre-line">{invoice.customer_address}</p>}
             <p className="text-sm text-muted-foreground">{invoice.customer_contact}</p>
+            {invoice.customer_email && <p className="text-sm text-muted-foreground">{invoice.customer_email}</p>}
+            {invoice.customer_tax_number && <p className="text-xs text-muted-foreground">HST: {invoice.customer_tax_number}</p>}
           </div>
         </div>
 
         <table className="w-full text-sm">
-          <thead className="border-b">
+          <thead style={{ background: primary, color: "white" }}>
             <tr className="text-left">
-              <th className="py-2">Item</th>
-              <th>Serial</th>
+              <th className="py-2 px-2">Description</th>
               <th className="text-right">Qty</th>
-              <th className="text-right">Unit</th>
+              <th className="text-right">Rate</th>
               <th className="text-right">Subtotal</th>
               <th className="text-right">GST</th>
-              <th className="text-right">Total</th>
+              <th className="text-right px-2">Total</th>
             </tr>
           </thead>
           <tbody>
             {items.map((r) => (
               <tr key={r.id} className="border-b">
-                <td className="py-2">{r.item_name}</td>
-                <td className="font-mono text-xs">{r.serial_number}</td>
+                <td className="py-2 px-2">{r.item_name}</td>
                 <td className="text-right">{r.quantity}</td>
                 <td className="text-right">{fmtMoney(r.unit_price)}</td>
                 <td className="text-right">{fmtMoney(r.subtotal)}</td>
                 <td className="text-right">{fmtMoney(r.gst_amount)}</td>
-                <td className="text-right font-semibold">{fmtMoney(r.line_total)}</td>
+                <td className="text-right font-semibold px-2">{fmtMoney(r.line_total)}</td>
               </tr>
             ))}
           </tbody>
@@ -91,23 +103,35 @@ export function InvoiceDetailPage() {
 
         <div className="mt-6 flex justify-end">
           <div className="w-72 space-y-1 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Total Quantity</span><span>{invoice.total_quantity}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{fmtMoney(invoice.total_subtotal)}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">GST</span><span>{fmtMoney(invoice.total_gst)}</span></div>
-            <div className="flex justify-between border-t pt-2 text-lg font-bold"><span>Grand Total</span><span>{fmtMoney(invoice.grand_total)}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">GST / HST</span><span>{fmtMoney(invoice.total_gst)}</span></div>
+            <div className="flex justify-between pt-2 text-lg font-bold px-2 rounded" style={{ background: primary, color: "white" }}><span>Total Due</span><span>{fmtMoney(invoice.grand_total)}</span></div>
+            {invoice.amount_paid > 0 && (
+              <>
+                <div className="flex justify-between pt-1"><span className="text-muted-foreground">Paid</span><span>{fmtMoney(invoice.amount_paid)}</span></div>
+                <div className="flex justify-between font-semibold" style={{ color: accent }}><span>Balance</span><span>{fmtMoney(balance)}</span></div>
+              </>
+            )}
           </div>
         </div>
 
         {invoice.notes && (
           <div className="mt-8">
-            <p className="text-xs uppercase text-muted-foreground mb-1">Notes</p>
+            <p className="text-xs uppercase mb-1" style={{ color: primary }}>Notes</p>
             <p className="text-sm">{invoice.notes}</p>
           </div>
         )}
 
+        {company?.terms && (
+          <div className="mt-8">
+            <p className="text-xs uppercase mb-1" style={{ color: primary }}>Terms & Conditions</p>
+            <p className="text-xs whitespace-pre-line text-muted-foreground">{company.terms}</p>
+          </div>
+        )}
+
         <div className="mt-16 grid grid-cols-2 gap-8 text-sm">
-          <div className="border-t pt-2 text-muted-foreground">Customer Signature</div>
-          <div className="border-t pt-2 text-muted-foreground">Authorized Signature</div>
+          <div className="border-t pt-2 text-muted-foreground" style={{ borderColor: accent }}>Customer Signature</div>
+          <div className="border-t pt-2 text-muted-foreground" style={{ borderColor: accent }}>Authorized Signature — {company?.name}</div>
         </div>
       </Card>
     </div>

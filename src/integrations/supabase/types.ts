@@ -14,8 +14,98 @@ export type Database = {
   }
   public: {
     Tables: {
+      companies: {
+        Row: {
+          accent_color: string
+          address: string
+          created_at: string
+          design_template: string
+          email: string
+          font_family: string
+          id: string
+          logo_url: string
+          name: string
+          phone: string
+          primary_color: string
+          tax_number: string
+          terms: string
+        }
+        Insert: {
+          accent_color?: string
+          address?: string
+          created_at?: string
+          design_template?: string
+          email?: string
+          font_family?: string
+          id?: string
+          logo_url?: string
+          name: string
+          phone?: string
+          primary_color?: string
+          tax_number?: string
+          terms?: string
+        }
+        Update: {
+          accent_color?: string
+          address?: string
+          created_at?: string
+          design_template?: string
+          email?: string
+          font_family?: string
+          id?: string
+          logo_url?: string
+          name?: string
+          phone?: string
+          primary_color?: string
+          tax_number?: string
+          terms?: string
+        }
+        Relationships: []
+      }
+      company_services: {
+        Row: {
+          category: string
+          company_id: string
+          created_at: string
+          default_price: number
+          description: string
+          id: string
+          notes: string
+          price_label: string
+        }
+        Insert: {
+          category?: string
+          company_id: string
+          created_at?: string
+          default_price?: number
+          description: string
+          id?: string
+          notes?: string
+          price_label?: string
+        }
+        Update: {
+          category?: string
+          company_id?: string
+          created_at?: string
+          default_price?: number
+          description?: string
+          id?: string
+          notes?: string
+          price_label?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_services_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_items: {
         Row: {
+          company_service_id: string | null
           created_at: string
           gst_amount: number
           gst_mode: string
@@ -31,6 +121,7 @@ export type Database = {
           unit_price: number
         }
         Insert: {
+          company_service_id?: string | null
           created_at?: string
           gst_amount?: number
           gst_mode?: string
@@ -46,6 +137,7 @@ export type Database = {
           unit_price?: number
         }
         Update: {
+          company_service_id?: string | null
           created_at?: string
           gst_amount?: number
           gst_mode?: string
@@ -61,6 +153,13 @@ export type Database = {
           unit_price?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "invoice_items_company_service_id_fkey"
+            columns: ["company_service_id"]
+            isOneToOne: false
+            referencedRelation: "company_services"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "invoice_items_invoice_id_fkey"
             columns: ["invoice_id"]
@@ -79,9 +178,14 @@ export type Database = {
       }
       invoices: {
         Row: {
+          amount_paid: number
+          company_id: string | null
           created_at: string
+          customer_address: string
           customer_contact: string
+          customer_email: string
           customer_name: string
+          customer_tax_number: string
           grand_total: number
           id: string
           invoice_date: string
@@ -92,9 +196,14 @@ export type Database = {
           total_subtotal: number
         }
         Insert: {
+          amount_paid?: number
+          company_id?: string | null
           created_at?: string
+          customer_address?: string
           customer_contact?: string
+          customer_email?: string
           customer_name?: string
+          customer_tax_number?: string
           grand_total?: number
           id?: string
           invoice_date?: string
@@ -105,9 +214,14 @@ export type Database = {
           total_subtotal?: number
         }
         Update: {
+          amount_paid?: number
+          company_id?: string | null
           created_at?: string
+          customer_address?: string
           customer_contact?: string
+          customer_email?: string
           customer_name?: string
+          customer_tax_number?: string
           grand_total?: number
           id?: string
           invoice_date?: string
@@ -117,7 +231,15 @@ export type Database = {
           total_quantity?: number
           total_subtotal?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "invoices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       items: {
         Row: {

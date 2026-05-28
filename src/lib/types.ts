@@ -12,17 +12,49 @@ export interface Item {
   updated_at: string;
 }
 
+export interface Company {
+  id: string;
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
+  tax_number: string;
+  logo_url: string;
+  primary_color: string;
+  accent_color: string;
+  font_family: string;
+  design_template: string; // 'classic' | 'modern' | 'vibrant'
+  terms: string;
+  created_at: string;
+}
+
+export interface CompanyService {
+  id: string;
+  company_id: string;
+  category: string;
+  description: string;
+  price_label: string;
+  default_price: number;
+  notes: string;
+  created_at: string;
+}
+
 export interface Invoice {
   id: string;
   invoice_number: string;
+  company_id: string | null;
   customer_name: string;
   customer_contact: string;
+  customer_address: string;
+  customer_email: string;
+  customer_tax_number: string;
   notes: string | null;
   invoice_date: string;
   total_quantity: number;
   total_subtotal: number;
   total_gst: number;
   grand_total: number;
+  amount_paid: number;
   created_at: string;
 }
 
