@@ -67,6 +67,14 @@ export function InvoiceDetailPage() {
 
         <div className="grid grid-cols-2 gap-6 mb-6">
           <div>
+            <p className="text-xs uppercase mb-1" style={{ color: primary }}>From</p>
+            <p className="font-semibold">{company?.name || "—"}</p>
+            {company?.address && <p className="text-sm text-muted-foreground whitespace-pre-line">{company.address}</p>}
+            {company?.phone && <p className="text-sm text-muted-foreground">{company.phone}</p>}
+            {company?.email && <p className="text-sm text-muted-foreground">{company.email}</p>}
+            {company?.tax_number && <p className="text-xs text-muted-foreground">HST: {company.tax_number}</p>}
+          </div>
+          <div>
             <p className="text-xs uppercase mb-1" style={{ color: primary }}>Bill To</p>
             <p className="font-semibold">{invoice.customer_name || "—"}</p>
             {invoice.customer_address && <p className="text-sm text-muted-foreground whitespace-pre-line">{invoice.customer_address}</p>}
