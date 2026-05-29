@@ -27,6 +27,7 @@ export type Database = {
           name: string
           phone: string
           primary_color: string
+          role: string
           tax_number: string
           terms: string
         }
@@ -42,6 +43,7 @@ export type Database = {
           name: string
           phone?: string
           primary_color?: string
+          role?: string
           tax_number?: string
           terms?: string
         }
@@ -57,6 +59,7 @@ export type Database = {
           name?: string
           phone?: string
           primary_color?: string
+          role?: string
           tax_number?: string
           terms?: string
         }
