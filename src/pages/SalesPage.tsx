@@ -17,7 +17,7 @@ import {
 import { Plus, Trash2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "@tanstack/react-router";
-import { openInvoicePdf } from "@/lib/invoicePdf";
+import { openInvoicePdf, buildInvoicePdf } from "@/lib/invoicePdf";
 
 interface Row {
   key: string;
@@ -46,6 +46,7 @@ export function SalesPage() {
   const navigate = useNavigate();
   const [rows, setRows] = useState<Row[]>([newRow()]);
   const [companyId, setCompanyId] = useState<string>("");
+  const [customerCompanyId, setCustomerCompanyId] = useState<string>("");
   const [customerName, setCustomerName] = useState("");
   const [customerContact, setCustomerContact] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
@@ -75,6 +76,19 @@ export function SalesPage() {
   });
 
   const selectedCompany = companies.find((c) => c.id === companyId);
+  const sellerCompanies = companies.filter((c) => c.role === "seller" || c.role === "both");
+  const purchaserCompanies = companies.filter((c) => c.role === "purchaser" || c.role === "both");
+
+  const onPickPurchaser = (cid: string) => {
+    setCustomerCompanyId(cid);
+    const c = companies.find((x) => x.id === cid);
+    if (!c) return;
+    setCustomerName(c.name);
+    setCustomerAddress(c.address);
+    setCustomerEmail(c.email);
+    setCustomerContact(c.phone);
+    setCustomerTaxNumber(c.tax_number);
+  };
 
   useEffect(() => { setRows([newRow()]); }, [companyId]);
 
@@ -102,6 +116,39 @@ export function SalesPage() {
     }
     return { q, sub, gst, grand };
   }, [rows]);
+
+  // Live preview PDF
+  const previewUrl = useMemo(() => {
+    if (!selectedCompany) return null;
+    try {
+      const fakeInvoice = {
+        id: "preview", invoice_number: "PREVIEW", company_id: companyId,
+        customer_name: customerName, customer_contact: customerContact,
+        customer_address: customerAddress, customer_email: customerEmail,
+        customer_tax_number: customerTaxNumber,
+        notes, invoice_date: invoiceDate,
+        total_quantity: totals.q, total_subtotal: totals.sub,
+        total_gst: totals.gst, grand_total: totals.grand,
+        amount_paid: amountPaid, created_at: "",
+      };
+      const lines = rows.filter((r) => r.item_name).map((r) => {
+        const c = calcRow(r);
+        return {
+          id: r.key, invoice_id: "preview", item_id: null,
+          item_name: r.item_name, serial_number: null,
+          quantity: r.quantity, unit_price: r.unit_price,
+          gst_mode: r.gst_mode, gst_value: r.gst_value,
+          subtotal: c.subtotal, gst_amount: c.gst, line_total: c.total,
+          created_at: "",
+        };
+      });
+      const doc = buildInvoicePdf(fakeInvoice as never, lines as never, selectedCompany);
+      return doc.output("datauristring");
+    } catch (e) {
+      console.error("preview failed", e);
+      return null;
+    }
+  }, [selectedCompany, companyId, customerName, customerContact, customerAddress, customerEmail, customerTaxNumber, notes, invoiceDate, totals, amountPaid, rows]);
 
   const save = useMutation({
     mutationFn: async () => {
@@ -165,21 +212,22 @@ export function SalesPage() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="grid grid-cols-1 xl:grid-cols-[1fr_480px] gap-6">
+      <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">New Invoice</h2>
-        <p className="text-sm text-muted-foreground">Pick a company, then add their services.</p>
+        <p className="text-sm text-muted-foreground">Pick seller (From), purchaser (To), then add services.</p>
       </div>
 
       <Card>
         <CardHeader><CardTitle>Issuing Company & Customer</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2">
-            <Label>Issuing Company (From)</Label>
+            <Label>Issuing Company — FROM (Seller)</Label>
             <Select value={companyId} onValueChange={setCompanyId}>
-              <SelectTrigger><SelectValue placeholder="Select company" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Select seller company" /></SelectTrigger>
               <SelectContent>
-                {companies.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                {sellerCompanies.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
             {selectedCompany && (
@@ -190,9 +238,18 @@ export function SalesPage() {
           </div>
           <div><Label>Date</Label><Input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} /></div>
           <div><Label>Amount Paid</Label><Input type="number" step="0.01" value={amountPaid} onChange={(e) => setAmountPaid(parseFloat(e.target.value) || 0)} /></div>
+          <div className="md:col-span-2">
+            <Label>Customer Company — TO (Purchaser)</Label>
+            <Select value={customerCompanyId} onValueChange={onPickPurchaser}>
+              <SelectTrigger><SelectValue placeholder="Select purchaser company (auto-fills details)" /></SelectTrigger>
+              <SelectContent>
+                {purchaserCompanies.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="md:col-span-2"><Label>Contact Person</Label><Input value={customerContact} onChange={(e) => setCustomerContact(e.target.value)} /></div>
           <div className="md:col-span-2"><Label>Customer Name (Bill To)</Label><Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} /></div>
-          <div><Label>Contact Person</Label><Input value={customerContact} onChange={(e) => setCustomerContact(e.target.value)} /></div>
-          <div><Label>Customer Email</Label><Input value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} /></div>
+          <div className="md:col-span-2"><Label>Customer Email</Label><Input value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} /></div>
           <div className="md:col-span-2"><Label>Customer Address</Label><Textarea value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} /></div>
           <div className="md:col-span-2"><Label>Customer HST / Tax #</Label><Input value={customerTaxNumber} onChange={(e) => setCustomerTaxNumber(e.target.value)} /></div>
           <div className="md:col-span-4"><Label>Notes / Remarks</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
@@ -288,6 +345,23 @@ export function SalesPage() {
           </div>
         </CardContent>
       </Card>
+      </div>
+
+      <aside className="hidden xl:block">
+        <div className="sticky top-24 space-y-2">
+          <h3 className="text-sm font-semibold">Live Preview</h3>
+          <p className="text-xs text-muted-foreground">Updates as you type. Final PDF opens on Save.</p>
+          <div className="border rounded-md overflow-hidden bg-muted" style={{ height: "calc(100vh - 180px)" }}>
+            {previewUrl ? (
+              <iframe title="Invoice preview" src={previewUrl} className="w-full h-full" />
+            ) : (
+              <div className="flex items-center justify-center h-full text-sm text-muted-foreground p-4 text-center">
+                Select an issuing company to preview the invoice.
+              </div>
+            )}
+          </div>
+        </div>
+      </aside>
     </div>
   );
 }
