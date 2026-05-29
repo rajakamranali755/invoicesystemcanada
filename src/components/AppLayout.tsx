@@ -1,5 +1,5 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Building2, FileText, Receipt, BarChart3, Package } from "lucide-react";
+import { Building2, FileText, Receipt } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const COMPANY = "ABC_CANADA COMPANY";
@@ -8,8 +8,6 @@ const nav = [
   { to: "/", label: "Companies", icon: Building2 },
   { to: "/sales", label: "New Invoice", icon: FileText },
   { to: "/invoices", label: "Invoices", icon: Receipt },
-  { to: "/inventory", label: "Inventory", icon: Package },
-  { to: "/reports/unsold", label: "Unsold Report", icon: BarChart3 },
 ];
 
 export function AppLayout() {

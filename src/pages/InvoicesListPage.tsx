@@ -1,12 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Invoice } from "@/lib/types";
+import type { Invoice, InvoiceItem, Company } from "@/lib/types";
 import { fmtMoney } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { Eye } from "lucide-react";
+import { Eye, FileText } from "lucide-react";
+import { openInvoicePdf } from "@/lib/invoicePdf";
+import { toast } from "sonner";
 
 export function InvoicesListPage() {
   const { data: invoices = [], isLoading } = useQuery({
@@ -17,6 +19,24 @@ export function InvoicesListPage() {
       return data as Invoice[];
     },
   });
+
+  const viewPdf = async (invId: string, companyId: string | null) => {
+    try {
+      const [{ data: inv }, { data: items }] = await Promise.all([
+        supabase.from("invoices").select("*").eq("id", invId).single(),
+        supabase.from("invoice_items").select("*").eq("invoice_id", invId),
+      ]);
+      let company: Company | null = null;
+      if (companyId) {
+        const { data: c } = await supabase.from("companies").select("*").eq("id", companyId).single();
+        company = (c as Company) ?? null;
+      }
+      openInvoicePdf(inv as Invoice, (items ?? []) as InvoiceItem[], company);
+    } catch (e) {
+      toast.error("Could not open PDF");
+      console.error(e);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -54,10 +74,13 @@ export function InvoicesListPage() {
                     <TableCell className="text-right">{fmtMoney(i.total_subtotal)}</TableCell>
                     <TableCell className="text-right">{fmtMoney(i.total_gst)}</TableCell>
                     <TableCell className="text-right font-semibold">{fmtMoney(i.grand_total)}</TableCell>
-                    <TableCell>
+                    <TableCell className="flex gap-1">
+                      <Button size="sm" onClick={() => viewPdf(i.id, i.company_id)}>
+                        <FileText className="h-4 w-4 mr-1" /> PDF
+                      </Button>
                       <Button asChild size="sm" variant="outline">
                         <Link to="/invoices/$id" params={{ id: i.id }}>
-                          <Eye className="h-4 w-4 mr-1" /> View
+                          <Eye className="h-4 w-4" />
                         </Link>
                       </Button>
                     </TableCell>
