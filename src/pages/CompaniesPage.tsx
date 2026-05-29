@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Company } from "@/lib/types";
@@ -8,14 +8,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Settings } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { buildInvoicePdf } from "@/lib/invoicePdf";
 
 const TEMPLATES = [
   { value: "classic", label: "Classic (Navy / Gold)" },
   { value: "modern", label: "Modern (Teal / Charcoal)" },
   { value: "vibrant", label: "Vibrant (Orange / Dark)" },
+  { value: "elegant", label: "Elegant (Serif / Centered)" },
+  { value: "bold", label: "Bold (Heavy Block)" },
+  { value: "minimal", label: "Minimal (Hairline)" },
+  { value: "corporate", label: "Corporate (Two-tone)" },
 ];
 
 const empty = {
@@ -34,6 +40,7 @@ export function CompaniesPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(empty);
+  const [roleFilter, setRoleFilter] = useState<"all" | "seller" | "purchaser" | "both">("all");
 
   const { data: companies = [], isLoading } = useQuery({
     queryKey: ["companies"],
@@ -58,6 +65,11 @@ export function CompaniesPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const filtered = useMemo(
+    () => roleFilter === "all" ? companies : companies.filter((c) => c.role === roleFilter),
+    [companies, roleFilter],
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex items-end justify-between flex-wrap gap-4">
@@ -69,6 +81,15 @@ export function CompaniesPage() {
           <Plus className="h-4 w-4 mr-1" /> {open ? "Close" : "Add Company"}
         </Button>
       </div>
+
+      <Tabs value={roleFilter} onValueChange={(v) => setRoleFilter(v as typeof roleFilter)}>
+        <TabsList>
+          <TabsTrigger value="all">All ({companies.length})</TabsTrigger>
+          <TabsTrigger value="seller">Sellers ({companies.filter((c) => c.role === "seller").length})</TabsTrigger>
+          <TabsTrigger value="purchaser">Purchasers ({companies.filter((c) => c.role === "purchaser").length})</TabsTrigger>
+          <TabsTrigger value="both">Both ({companies.filter((c) => c.role === "both").length})</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {open && (
         <Card>
@@ -108,29 +129,64 @@ export function CompaniesPage() {
         <p className="text-muted-foreground">Loading...</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {companies.map((c) => (
-            <Card key={c.id} className="overflow-hidden">
-              <div className="h-3" style={{ background: `linear-gradient(90deg, ${c.primary_color}, ${c.accent_color})` }} />
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between gap-2">
-                  <span>{c.name}</span>
-                  <span className="text-xs font-mono px-2 py-1 rounded" style={{ background: c.primary_color + "22", color: c.primary_color }}>{c.role}</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <p className="text-muted-foreground whitespace-pre-line">{c.address || "No address"}</p>
-                <p>{c.phone} · {c.email}</p>
-                <p className="text-xs text-muted-foreground">HST: {c.tax_number || "—"}</p>
-                <Button asChild size="sm" variant="outline" className="mt-2">
-                  <Link to="/companies/$id" params={{ id: c.id }}>
-                    <Settings className="h-4 w-4 mr-1" /> Manage services & branding
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+          {filtered.map((c) => <CompanyCard key={c.id} c={c} />)}
+          {filtered.length === 0 && <p className="text-muted-foreground col-span-full">No companies in this filter.</p>}
         </div>
       )}
     </div>
+  );
+}
+
+function CompanyCard({ c }: { c: Company }) {
+  const previewUrl = useMemo(() => {
+    try {
+      const fakeInvoice = {
+        id: "p", invoice_number: "INV-PREVIEW", company_id: c.id,
+        customer_name: "Sample Customer Ltd.", customer_contact: "Jane Doe",
+        customer_address: "123 Demo Street\nToronto, ON M5V 1A1",
+        customer_email: "billing@sample.ca", customer_tax_number: "12345 6789 RT0001",
+        notes: null, invoice_date: new Date().toISOString().slice(0, 10),
+        total_quantity: 3, total_subtotal: 1500, total_gst: 195,
+        grand_total: 1695, amount_paid: 0, created_at: "",
+      };
+      const lines = [
+        { id: "1", invoice_id: "p", item_id: null, item_name: "Sample Service A", serial_number: null, quantity: 1, unit_price: 800, gst_mode: "percent" as const, gst_value: 13, subtotal: 800, gst_amount: 104, line_total: 904, created_at: "" },
+        { id: "2", invoice_id: "p", item_id: null, item_name: "Sample Service B", serial_number: null, quantity: 2, unit_price: 350, gst_mode: "percent" as const, gst_value: 13, subtotal: 700, gst_amount: 91, line_total: 791, created_at: "" },
+      ];
+      const doc = buildInvoicePdf(fakeInvoice, lines, c);
+      return doc.output("datauristring");
+    } catch (e) {
+      console.error("card preview failed", e);
+      return null;
+    }
+  }, [c]);
+
+  return (
+    <Card className="overflow-hidden flex flex-col">
+      <div className="h-3 shrink-0" style={{ background: `linear-gradient(90deg, ${c.primary_color}, ${c.accent_color})` }} />
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center justify-between gap-2 text-base">
+          <span className="truncate">{c.name}</span>
+          <span className="text-[10px] font-mono px-2 py-1 rounded uppercase shrink-0" style={{ background: c.primary_color + "22", color: c.primary_color }}>{c.role}</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3 text-sm flex-1 flex flex-col">
+        <div className="border rounded-md overflow-hidden bg-muted" style={{ height: 220 }}>
+          {previewUrl ? (
+            <iframe title={`${c.name} invoice preview`} src={previewUrl + "#toolbar=0&navpanes=0&view=FitH"} className="w-full h-full pointer-events-none" />
+          ) : (
+            <div className="h-full flex items-center justify-center text-xs text-muted-foreground">Preview unavailable</div>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Template: <span className="font-mono">{c.design_template}</span> · HST {c.tax_number || "—"}
+        </p>
+        <Button asChild size="sm" variant="outline" className="mt-auto">
+          <Link to="/companies/$id" params={{ id: c.id }}>
+            <Settings className="h-4 w-4 mr-1" /> Manage services & branding
+          </Link>
+        </Button>
+      </CardContent>
+    </Card>
   );
 }

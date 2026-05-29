@@ -18,6 +18,10 @@ const TEMPLATES = [
   { value: "classic", label: "Classic (Navy / Gold)" },
   { value: "modern", label: "Modern (Teal / Charcoal)" },
   { value: "vibrant", label: "Vibrant (Orange / Dark)" },
+  { value: "elegant", label: "Elegant (Serif / Centered)" },
+  { value: "bold", label: "Bold (Heavy Block)" },
+  { value: "minimal", label: "Minimal (Hairline)" },
+  { value: "corporate", label: "Corporate (Two-tone)" },
 ];
 
 const ROLES = [
