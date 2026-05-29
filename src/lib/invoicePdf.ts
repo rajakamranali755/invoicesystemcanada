@@ -2,6 +2,15 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { fmtMoney, type Invoice, type InvoiceItem, type Company } from "@/lib/types";
 
+export interface PdfCustomer {
+  name: string;
+  address?: string;
+  contact?: string;
+  email?: string;
+  tax_number?: string;
+  phone?: string;
+}
+
 function hexToRgb(hex: string): [number, number, number] {
   const h = hex.replace("#", "");
   return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
@@ -52,7 +61,7 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
   const c: Company = company || {
     id: "", name: "Company", address: "", phone: "", email: "", tax_number: "", logo_url: "",
     primary_color: "#0f1b3d", accent_color: "#c9a84c", font_family: "helvetica",
-    design_template: "classic", terms: "", created_at: "",
+    design_template: "classic", terms: "", created_at: "", role: "both",
   };
   const doc = new jsPDF();
   drawHeader(doc, c, tpl);
