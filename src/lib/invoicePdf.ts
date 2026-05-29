@@ -78,19 +78,29 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
   doc.text(`Invoice #: ${invoice.invoice_number}`, leftStart, startY + 6);
   doc.text(`Date: ${invoice.invoice_date}`, leftStart, startY + 12);
 
-  // From / To
-  const colTo = tpl === "modern" ? 130 : 120;
-  doc.setFont("helvetica", "bold"); doc.setTextColor(pr, pg, pb);
-  doc.text("BILL TO", colTo, startY);
+  // FROM (seller) / TO (purchaser) blocks
+  const fromY = startY + 22;
+  doc.setFont("helvetica", "bold"); doc.setTextColor(pr, pg, pb); doc.setFontSize(10);
+  doc.text("FROM", leftStart, fromY);
   doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-  doc.text(invoice.customer_name || "—", colTo, startY + 6);
-  if (invoice.customer_address) doc.text(invoice.customer_address.split("\n"), colTo, startY + 12);
-  if (invoice.customer_contact) doc.text(`Contact: ${invoice.customer_contact}`, colTo, startY + 28);
-  if (invoice.customer_email) doc.text(invoice.customer_email, colTo, startY + 34);
-  if (invoice.customer_tax_number) doc.text(`HST: ${invoice.customer_tax_number}`, colTo, startY + 40);
+  doc.text(c.name, leftStart, fromY + 6);
+  if (c.address) doc.text(doc.splitTextToSize(c.address, 80), leftStart, fromY + 12);
+  if (c.phone) doc.text(c.phone, leftStart, fromY + 28);
+  if (c.email) doc.text(c.email, leftStart, fromY + 34);
+  if (c.tax_number) doc.text(`HST: ${c.tax_number}`, leftStart, fromY + 40);
+
+  const colTo = tpl === "modern" ? 130 : 120;
+  doc.setFont("helvetica", "bold"); doc.setTextColor(pr, pg, pb); doc.setFontSize(10);
+  doc.text("TO (BILL TO)", colTo, fromY);
+  doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+  doc.text(invoice.customer_name || "—", colTo, fromY + 6);
+  if (invoice.customer_address) doc.text(doc.splitTextToSize(invoice.customer_address, 70), colTo, fromY + 12);
+  if (invoice.customer_contact) doc.text(`Contact: ${invoice.customer_contact}`, colTo, fromY + 28);
+  if (invoice.customer_email) doc.text(invoice.customer_email, colTo, fromY + 34);
+  if (invoice.customer_tax_number) doc.text(`HST: ${invoice.customer_tax_number}`, colTo, fromY + 40);
 
   autoTable(doc, {
-    startY: startY + 50,
+    startY: fromY + 50,
     margin: { left: leftStart, right: 14 },
     head: [["Description", "Qty", "Rate", "Subtotal", "GST", "Total"]],
     body: items.map((r) => [
