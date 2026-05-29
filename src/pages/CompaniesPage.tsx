@@ -21,8 +21,14 @@ const TEMPLATES = [
 const empty = {
   name: "", address: "", phone: "", email: "", tax_number: "", logo_url: "",
   primary_color: "#0f1b3d", accent_color: "#c9a84c", font_family: "helvetica",
-  design_template: "classic", terms: "",
+  design_template: "classic", terms: "", role: "seller" as "seller" | "purchaser" | "both",
 };
+
+const ROLES = [
+  { value: "seller", label: "Seller (issues invoices)" },
+  { value: "purchaser", label: "Purchaser (customer)" },
+  { value: "both", label: "Both" },
+];
 
 export function CompaniesPage() {
   const qc = useQueryClient();
@@ -75,6 +81,13 @@ export function CompaniesPage() {
             <div><Label>Tax / HST Number</Label><Input value={form.tax_number} onChange={(e) => setForm({ ...form, tax_number: e.target.value })} /></div>
             <div><Label>Logo URL</Label><Input value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} placeholder="https://..." /></div>
             <div>
+              <Label>Role *</Label>
+              <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v as typeof form.role })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
               <Label>Design Template</Label>
               <Select value={form.design_template} onValueChange={(v) => setForm({ ...form, design_template: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -101,7 +114,7 @@ export function CompaniesPage() {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between gap-2">
                   <span>{c.name}</span>
-                  <span className="text-xs font-mono px-2 py-1 rounded" style={{ background: c.primary_color + "22", color: c.primary_color }}>{c.design_template}</span>
+                  <span className="text-xs font-mono px-2 py-1 rounded" style={{ background: c.primary_color + "22", color: c.primary_color }}>{c.role}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
