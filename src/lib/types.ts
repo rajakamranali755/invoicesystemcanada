@@ -25,6 +25,7 @@ export interface Company {
   font_family: string;
   design_template: string; // 'classic' | 'modern' | 'vibrant'
   terms: string;
+  role: "seller" | "purchaser" | "both";
   created_at: string;
 }
 
