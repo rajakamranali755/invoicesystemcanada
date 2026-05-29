@@ -20,6 +20,12 @@ const TEMPLATES = [
   { value: "vibrant", label: "Vibrant (Orange / Dark)" },
 ];
 
+const ROLES = [
+  { value: "seller", label: "Seller" },
+  { value: "purchaser", label: "Purchaser" },
+  { value: "both", label: "Both" },
+];
+
 export function CompanyDetailPage() {
   const { id } = Route.useParams();
   const qc = useQueryClient();
@@ -54,6 +60,7 @@ export function CompanyDetailPage() {
         tax_number: form.tax_number, logo_url: form.logo_url,
         primary_color: form.primary_color, accent_color: form.accent_color,
         font_family: form.font_family, design_template: form.design_template, terms: form.terms,
+        role: form.role,
       }).eq("id", id);
       if (error) throw error;
     },
@@ -95,6 +102,13 @@ export function CompanyDetailPage() {
           <div className="md:col-span-2"><Label>Address</Label><Textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
           <div><Label>Tax / HST</Label><Input value={form.tax_number} onChange={(e) => setForm({ ...form, tax_number: e.target.value })} /></div>
           <div className="md:col-span-2"><Label>Logo URL</Label><Input value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} placeholder="https://..." /></div>
+          <div>
+            <Label>Role</Label>
+            <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v as Company["role"] })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
           <div>
             <Label>Design Template</Label>
             <Select value={form.design_template} onValueChange={(v) => setForm({ ...form, design_template: v })}>
