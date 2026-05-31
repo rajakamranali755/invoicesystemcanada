@@ -22,6 +22,11 @@ const TEMPLATES = [
   { value: "bold", label: "Bold (Heavy Block)" },
   { value: "minimal", label: "Minimal (Hairline)" },
   { value: "corporate", label: "Corporate (Two-tone)" },
+  { value: "monochrome", label: "Monochrome (Stark B&W)" },
+  { value: "gradient", label: "Gradient (Primary→Accent fade)" },
+  { value: "geometric", label: "Geometric (Circle + Block)" },
+  { value: "executive", label: "Executive (Serif / Double Rule)" },
+  { value: "industrial", label: "Industrial (Blueprint / Mono)" },
 ];
 
 const ROLES = [
