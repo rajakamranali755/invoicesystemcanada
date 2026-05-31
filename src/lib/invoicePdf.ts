@@ -80,6 +80,74 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "normal"); doc.setFontSize(9);
     doc.text(c.address.split("\n").join(" · "), 14, 30);
     doc.text(`${c.phone}  ·  ${c.email}  ·  HST ${c.tax_number}`, W - 14, 30, { align: "right" });
+  } else if (tpl === "monochrome") {
+    // Stark black/white with thick rule and oversized numeral mark
+    doc.setFillColor(0, 0, 0); doc.rect(0, 0, W, 40, "F");
+    doc.setFillColor(ar, ag, ab); doc.rect(0, 40, W, 1.2, "F");
+    doc.setTextColor(255, 255, 255); doc.setFont("courier", "bold"); doc.setFontSize(28);
+    doc.text("№", 14, 26);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(15);
+    doc.text(c.name.toUpperCase(), 32, 20);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+    doc.text(c.address.split("\n").join("  ·  "), 32, 27);
+    doc.text(`${c.phone}  ·  ${c.email}  ·  HST ${c.tax_number}`, 32, 33);
+    doc.setFont("courier", "normal"); doc.setFontSize(10);
+    doc.text("INVOICE", W - 14, 26, { align: "right" });
+  } else if (tpl === "gradient") {
+    // Faux gradient via stacked bands (primary -> accent)
+    for (let i = 0; i < 40; i++) {
+      const t = i / 39;
+      const r = Math.round(pr + (ar - pr) * t);
+      const g = Math.round(pg + (ag - pg) * t);
+      const b = Math.round(pb + (ab - pb) * t);
+      doc.setFillColor(r, g, b); doc.rect(0, i, W, 1.05, "F");
+    }
+    doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(24);
+    doc.text(c.name, 14, 22);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+    doc.text(c.address.split("\n").join(" · "), 14, 30);
+    doc.text(`${c.phone} · ${c.email} · HST ${c.tax_number}`, 14, 36);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(20);
+    doc.text("INVOICE", W - 14, 24, { align: "right" });
+  } else if (tpl === "geometric") {
+    // Decorative circles and squares around the name
+    doc.setFillColor(pr, pg, pb); doc.circle(20, 22, 14, "F");
+    doc.setFillColor(ar, ag, ab); doc.rect(W - 60, 8, 46, 28, "F");
+    doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(16);
+    doc.text("INV", 13, 25);
+    doc.setTextColor(0, 0, 0); doc.setFontSize(15);
+    doc.text(c.name.toUpperCase(), 40, 18);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+    doc.text(c.address.split("\n").join(" · "), 40, 25);
+    doc.text(`${c.phone}  ·  ${c.email}`, 40, 30);
+    doc.text(`HST ${c.tax_number}`, 40, 35);
+    doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(18);
+    doc.text("INVOICE", W - 16, 26, { align: "right" });
+    doc.setDrawColor(pr, pg, pb); doc.setLineWidth(0.4); doc.line(0, 40, W, 40);
+  } else if (tpl === "executive") {
+    // Serif executive: double rule with right-aligned brand
+    doc.setDrawColor(pr, pg, pb); doc.setLineWidth(1.2); doc.line(14, 12, W - 14, 12);
+    doc.setLineWidth(0.3); doc.line(14, 14.5, W - 14, 14.5);
+    doc.setTextColor(pr, pg, pb); doc.setFont("times", "bold"); doc.setFontSize(22);
+    doc.text(c.name, W - 14, 26, { align: "right" });
+    doc.setFont("times", "italic"); doc.setFontSize(9); doc.setTextColor(80, 80, 80);
+    doc.text(c.address.split("\n").join(" · "), W - 14, 32, { align: "right" });
+    doc.text(`${c.phone}  ·  ${c.email}  ·  HST ${c.tax_number}`, W - 14, 37, { align: "right" });
+    doc.setTextColor(ar, ag, ab); doc.setFont("times", "bold"); doc.setFontSize(11);
+    doc.text("STATEMENT OF ACCOUNT", 14, 26);
+    doc.setDrawColor(pr, pg, pb); doc.setLineWidth(0.6); doc.line(14, 41, W - 14, 41);
+  } else if (tpl === "industrial") {
+    // Stencil / blueprint vibe with dashed border and monospaced labels
+    doc.setFillColor(pr, pg, pb); doc.rect(0, 0, W, 36, "F");
+    doc.setDrawColor(ar, ag, ab); doc.setLineWidth(0.5); doc.setLineDashPattern([1.5, 1.5], 0);
+    doc.rect(4, 4, W - 8, 28); doc.setLineDashPattern([], 0);
+    doc.setTextColor(255, 255, 255); doc.setFont("courier", "bold"); doc.setFontSize(16);
+    doc.text(c.name.toUpperCase(), 10, 16);
+    doc.setFont("courier", "normal"); doc.setFontSize(8);
+    doc.text(`// ${c.address.split("\n").join(" / ")}`, 10, 23);
+    doc.text(`// ${c.phone}  ${c.email}  HST:${c.tax_number}`, 10, 29);
+    doc.setFont("courier", "bold"); doc.setFontSize(14);
+    doc.text("[ INVOICE ]", W - 10, 22, { align: "right" });
   } else {
     // Vibrant: diagonal accent block
     doc.setFillColor(pr, pg, pb); doc.rect(0, 0, W, 40, "F");
