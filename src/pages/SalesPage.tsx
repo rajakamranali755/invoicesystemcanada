@@ -17,7 +17,7 @@ import {
 import { Plus, Trash2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "@tanstack/react-router";
-import { openInvoicePdf, buildInvoicePdf } from "@/lib/invoicePdf";
+import { openInvoicePdf } from "@/lib/invoicePdf";
 
 interface Row {
   key: string;
@@ -117,38 +117,7 @@ export function SalesPage() {
     return { q, sub, gst, grand };
   }, [rows]);
 
-  // Live preview PDF
-  const previewUrl = useMemo(() => {
-    if (!selectedCompany) return null;
-    try {
-      const fakeInvoice = {
-        id: "preview", invoice_number: "PREVIEW", company_id: companyId,
-        customer_name: customerName, customer_contact: customerContact,
-        customer_address: customerAddress, customer_email: customerEmail,
-        customer_tax_number: customerTaxNumber,
-        notes, invoice_date: invoiceDate,
-        total_quantity: totals.q, total_subtotal: totals.sub,
-        total_gst: totals.gst, grand_total: totals.grand,
-        amount_paid: amountPaid, created_at: "",
-      };
-      const lines = rows.filter((r) => r.item_name).map((r) => {
-        const c = calcRow(r);
-        return {
-          id: r.key, invoice_id: "preview", item_id: null,
-          item_name: r.item_name, serial_number: null,
-          quantity: r.quantity, unit_price: r.unit_price,
-          gst_mode: r.gst_mode, gst_value: r.gst_value,
-          subtotal: c.subtotal, gst_amount: c.gst, line_total: c.total,
-          created_at: "",
-        };
-      });
-      const doc = buildInvoicePdf(fakeInvoice as never, lines as never, selectedCompany);
-      return doc.output("datauristring");
-    } catch (e) {
-      console.error("preview failed", e);
-      return null;
-    }
-  }, [selectedCompany, companyId, customerName, customerContact, customerAddress, customerEmail, customerTaxNumber, notes, invoiceDate, totals, amountPaid, rows]);
+  // Live preview disabled per request — final PDF opens on Save.
 
   const save = useMutation({
     mutationFn: async () => {
@@ -212,8 +181,7 @@ export function SalesPage() {
   });
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[1fr_480px] gap-6">
-      <div className="space-y-6">
+    <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">New Invoice</h2>
         <p className="text-sm text-muted-foreground">Pick seller (From), purchaser (To), then add services.</p>
@@ -345,23 +313,6 @@ export function SalesPage() {
           </div>
         </CardContent>
       </Card>
-      </div>
-
-      <aside className="hidden xl:block">
-        <div className="sticky top-24 space-y-2">
-          <h3 className="text-sm font-semibold">Live Preview</h3>
-          <p className="text-xs text-muted-foreground">Updates as you type. Final PDF opens on Save.</p>
-          <div className="border rounded-md overflow-hidden bg-muted" style={{ height: "calc(100vh - 180px)" }}>
-            {previewUrl ? (
-              <iframe title="Invoice preview" src={previewUrl} className="w-full h-full" />
-            ) : (
-              <div className="flex items-center justify-center h-full text-sm text-muted-foreground p-4 text-center">
-                Select an issuing company to preview the invoice.
-              </div>
-            )}
-          </div>
-        </div>
-      </aside>
     </div>
   );
 }
