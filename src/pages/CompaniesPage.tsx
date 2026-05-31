@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Settings } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { Plus, Settings, Trash2 } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { buildInvoicePdf } from "@/lib/invoicePdf";
 
@@ -38,6 +38,7 @@ const ROLES = [
 
 export function CompaniesPage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(empty);
   const [roleFilter, setRoleFilter] = useState<"all" | "seller" | "purchaser" | "both">("all");
@@ -54,12 +55,26 @@ export function CompaniesPage() {
   const create = useMutation({
     mutationFn: async () => {
       if (!form.name.trim()) throw new Error("Company name required.");
-      const { error } = await supabase.from("companies").insert(form);
+      const { data, error } = await supabase.from("companies").insert(form).select().single();
+      if (error) throw error;
+      return data as Company;
+    },
+    onSuccess: (c) => {
+      toast.success("Company added — now add its services");
+      setForm(empty); setOpen(false);
+      qc.invalidateQueries({ queryKey: ["companies"] });
+      navigate({ to: "/companies/$id", params: { id: c.id } });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const remove = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("companies").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Company added");
-      setForm(empty); setOpen(false);
+      toast.success("Company deleted");
       qc.invalidateQueries({ queryKey: ["companies"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -95,6 +110,9 @@ export function CompaniesPage() {
         <Card>
           <CardHeader><CardTitle>New Company</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <p className="md:col-span-3 text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+              Tip: After saving, you'll be taken to this company's page where you can add its services & pricing.
+            </p>
             <div><Label>Name *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
             <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
             <div><Label>Email</Label><Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
@@ -129,7 +147,9 @@ export function CompaniesPage() {
         <p className="text-muted-foreground">Loading...</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((c) => <CompanyCard key={c.id} c={c} />)}
+          {filtered.map((c) => <CompanyCard key={c.id} c={c} onDelete={(id) => {
+            if (confirm(`Delete "${c.name}"? This also removes its services and breaks any invoices linked to it.`)) remove.mutate(id);
+          }} />)}
           {filtered.length === 0 && <p className="text-muted-foreground col-span-full">No companies in this filter.</p>}
         </div>
       )}
@@ -137,7 +157,7 @@ export function CompaniesPage() {
   );
 }
 
-function CompanyCard({ c }: { c: Company }) {
+function CompanyCard({ c, onDelete }: { c: Company; onDelete: (id: string) => void }) {
   const previewUrl = useMemo(() => {
     try {
       const fakeInvoice = {
@@ -181,11 +201,16 @@ function CompanyCard({ c }: { c: Company }) {
         <p className="text-xs text-muted-foreground">
           Template: <span className="font-mono">{c.design_template}</span> · HST {c.tax_number || "—"}
         </p>
-        <Button asChild size="sm" variant="outline" className="mt-auto">
-          <Link to="/companies/$id" params={{ id: c.id }}>
-            <Settings className="h-4 w-4 mr-1" /> Manage services & branding
-          </Link>
-        </Button>
+        <div className="mt-auto flex gap-2">
+          <Button asChild size="sm" variant="outline" className="flex-1">
+            <Link to="/companies/$id" params={{ id: c.id }}>
+              <Settings className="h-4 w-4 mr-1" /> Manage
+            </Link>
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => onDelete(c.id)}>
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
