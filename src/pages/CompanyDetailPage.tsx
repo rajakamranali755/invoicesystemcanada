@@ -151,6 +151,11 @@ export function CompanyDetailPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
+                {services.length === 0 && (
+                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                    No services yet. Use the form above to add the first service for this company.
+                  </TableCell></TableRow>
+                )}
                 {services.map((s) => (
                   <TableRow key={s.id}>
                     <TableCell className="text-xs text-muted-foreground">{s.category}</TableCell>
