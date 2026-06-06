@@ -10,9 +10,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2, Save, ArrowLeft } from "lucide-react";
+import { Plus, Trash2, Save, ArrowLeft, Upload, Download } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
+import * as XLSX from "xlsx";
+import { useRef } from "react";
 
 const TEMPLATES = [
   { value: "classic", label: "Classic (Navy / Gold)" },
@@ -40,6 +42,7 @@ export function CompanyDetailPage() {
   const qc = useQueryClient();
   const [form, setForm] = useState<Company | null>(null);
   const [newSvc, setNewSvc] = useState({ category: "", description: "", price_label: "", default_price: 0, notes: "" });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: company } = useQuery({
     queryKey: ["company", id],
@@ -95,6 +98,58 @@ export function CompanyDetailPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["company_services", id] }),
   });
 
+  const bulkUpload = useMutation({
+    mutationFn: async (rows: Array<Record<string, unknown>>) => {
+      const normalized = rows.map((r) => {
+        const get = (keys: string[]) => {
+          for (const k of Object.keys(r)) {
+            if (keys.some((kk) => k.trim().toLowerCase() === kk.toLowerCase())) return r[k];
+          }
+          return "";
+        };
+        return {
+          company_id: id,
+          category: String(get(["Category", "category"]) ?? "").trim(),
+          description: String(get(["Description", "description"]) ?? "").trim(),
+          price_label: String(get(["Price Label", "price_label", "PriceLabel"]) ?? "").trim(),
+          default_price: parseFloat(String(get(["Default", "Default Price", "default_price"]) ?? "0")) || 0,
+          notes: String(get(["Notes", "notes"]) ?? "").trim(),
+        };
+      }).filter((r) => r.description);
+      if (normalized.length === 0) throw new Error("No valid rows found. Make sure 'Description' column has values.");
+      const { error } = await supabase.from("company_services").insert(normalized);
+      if (error) throw error;
+      return normalized.length;
+    },
+    onSuccess: (n) => { toast.success(`Imported ${n} services`); qc.invalidateQueries({ queryKey: ["company_services", id] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const handleFile = async (file: File) => {
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: "" });
+      await bulkUpload.mutateAsync(rows);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const downloadTemplate = () => {
+    const data = [
+      { Category: "Consulting", Description: "Initial consultation (1 hour)", "Price Label": "$100", Default: 100, Notes: "Sample row — replace with your services" },
+      { Category: "", Description: "", "Price Label": "", Default: 0, Notes: "" },
+    ];
+    const ws = XLSX.utils.json_to_sheet(data, { header: ["Category", "Description", "Price Label", "Default", "Notes"] });
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Services");
+    XLSX.writeFile(wb, "services-template.xlsx");
+  };
+
   if (!form) return <p className="text-muted-foreground">Loading...</p>;
 
   return (
@@ -133,8 +188,28 @@ export function CompanyDetailPage() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Services ({services.length})</CardTitle></CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Services ({services.length})</CardTitle>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={downloadTemplate}>
+              <Download className="h-4 w-4 mr-1" /> Template
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={bulkUpload.isPending}>
+              <Upload className="h-4 w-4 mr-1" /> {bulkUpload.isPending ? "Uploading..." : "Upload XLSX/CSV"}
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+            />
+          </div>
+        </CardHeader>
         <CardContent className="space-y-4">
+          <p className="text-xs text-muted-foreground">
+            Bulk import: download the template, fill rows (columns: Category, Description, Price Label, Default, Notes), then upload. Services will be added to <strong>{form.name}</strong>.
+          </p>
           <div className="grid grid-cols-1 md:grid-cols-6 gap-2 items-end">
             <div><Label>Category</Label><Input value={newSvc.category} onChange={(e) => setNewSvc({ ...newSvc, category: e.target.value })} /></div>
             <div className="md:col-span-2"><Label>Description</Label><Input value={newSvc.description} onChange={(e) => setNewSvc({ ...newSvc, description: e.target.value })} /></div>
