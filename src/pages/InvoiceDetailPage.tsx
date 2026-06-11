@@ -60,28 +60,29 @@ export function InvoiceDetailPage() {
           </div>
           <div className="text-right">
             <p className="text-2xl font-bold" style={{ color: primary }}>INVOICE</p>
-            <p className="font-mono text-sm mt-1">{invoice.invoice_number}</p>
-            <p className="text-sm text-muted-foreground">{invoice.invoice_date}</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-6 mb-6">
+        {/* Invoice # left, Date right — single row, no duplicate From block */}
+        <div className="flex justify-between items-start mb-6">
           <div>
-            <p className="text-xs uppercase mb-1" style={{ color: primary }}>From</p>
-            <p className="font-semibold">{company?.name || "—"}</p>
-            {company?.address && <p className="text-sm text-muted-foreground whitespace-pre-line">{company.address}</p>}
-            {company?.phone && <p className="text-sm text-muted-foreground">{company.phone}</p>}
-            {company?.email && <p className="text-sm text-muted-foreground">{company.email}</p>}
-            {company?.tax_number && <p className="text-xs text-muted-foreground">HST: {company.tax_number}</p>}
+            <p className="text-xs uppercase" style={{ color: primary }}>Invoice #</p>
+            <p className="font-mono text-lg font-semibold">{invoice.invoice_number}</p>
           </div>
-          <div>
+          <div className="text-right">
+            <p className="text-xs uppercase" style={{ color: primary }}>Invoice Date</p>
+            <p className="font-mono text-lg font-semibold">{invoice.invoice_date}</p>
+            <p className="text-[10px] text-muted-foreground">YYYY-MM-DD</p>
+          </div>
+        </div>
+
+        <div className="mb-6">
             <p className="text-xs uppercase mb-1" style={{ color: primary }}>Bill To</p>
             <p className="font-semibold">{invoice.customer_name || "—"}</p>
             {invoice.customer_address && <p className="text-sm text-muted-foreground whitespace-pre-line">{invoice.customer_address}</p>}
             <p className="text-sm text-muted-foreground">{invoice.customer_contact}</p>
             {invoice.customer_email && <p className="text-sm text-muted-foreground">{invoice.customer_email}</p>}
             {invoice.customer_tax_number && <p className="text-xs text-muted-foreground">HST: {invoice.customer_tax_number}</p>}
-          </div>
         </div>
 
         <table className="w-full text-sm">
@@ -90,8 +91,6 @@ export function InvoiceDetailPage() {
               <th className="py-2 px-2">Description</th>
               <th className="text-right">Qty</th>
               <th className="text-right">Rate</th>
-              <th className="text-right">Subtotal</th>
-              <th className="text-right">GST</th>
               <th className="text-right px-2">Total</th>
             </tr>
           </thead>
@@ -101,9 +100,7 @@ export function InvoiceDetailPage() {
                 <td className="py-2 px-2">{r.item_name}</td>
                 <td className="text-right">{r.quantity}</td>
                 <td className="text-right">{fmtMoney(r.unit_price)}</td>
-                <td className="text-right">{fmtMoney(r.subtotal)}</td>
-                <td className="text-right">{fmtMoney(r.gst_amount)}</td>
-                <td className="text-right font-semibold px-2">{fmtMoney(r.line_total)}</td>
+                <td className="text-right font-semibold px-2">{fmtMoney(r.subtotal)}</td>
               </tr>
             ))}
           </tbody>
@@ -112,7 +109,7 @@ export function InvoiceDetailPage() {
         <div className="mt-6 flex justify-end">
           <div className="w-72 space-y-1 text-sm">
             <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{fmtMoney(invoice.total_subtotal)}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">GST / HST</span><span>{fmtMoney(invoice.total_gst)}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">HST (13%)</span><span>{fmtMoney(invoice.total_gst)}</span></div>
             <div className="flex justify-between pt-2 text-lg font-bold px-2 rounded" style={{ background: primary, color: "white" }}><span>Total Due</span><span>{fmtMoney(invoice.grand_total)}</span></div>
             {invoice.amount_paid > 0 && (
               <>
@@ -137,9 +134,15 @@ export function InvoiceDetailPage() {
           </div>
         )}
 
-        <div className="mt-16 grid grid-cols-2 gap-8 text-sm">
-          <div className="border-t pt-2 text-muted-foreground" style={{ borderColor: accent }}>Customer Signature</div>
-          <div className="border-t pt-2 text-muted-foreground" style={{ borderColor: accent }}>Authorized Signature — {company?.name}</div>
+        <div className={"mt-16 flex " + (company?.signature_position === "left" ? "justify-start" : "justify-end")}>
+          <div className="w-64 text-sm">
+            {company?.signature_url && (
+              <img src={company.signature_url} alt="Signature" className="h-16 object-contain mb-1" />
+            )}
+            <div className="border-t pt-2 text-muted-foreground" style={{ borderColor: accent }}>
+              Authorized Signature — {company?.name}
+            </div>
+          </div>
         </div>
       </Card>
     </div>
