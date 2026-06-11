@@ -28,6 +28,8 @@ export type Database = {
           phone: string
           primary_color: string
           role: string
+          signature_position: string
+          signature_url: string
           tax_number: string
           terms: string
         }
@@ -44,6 +46,8 @@ export type Database = {
           phone?: string
           primary_color?: string
           role?: string
+          signature_position?: string
+          signature_url?: string
           tax_number?: string
           terms?: string
         }
@@ -60,6 +64,8 @@ export type Database = {
           phone?: string
           primary_color?: string
           role?: string
+          signature_position?: string
+          signature_url?: string
           tax_number?: string
           terms?: string
         }

@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Invoice, InvoiceItem, Company } from "@/lib/types";
@@ -9,8 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Eye, FileText } from "lucide-react";
 import { openInvoicePdf } from "@/lib/invoicePdf";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function InvoicesListPage() {
+  const [companyFilter, setCompanyFilter] = useState<string>("all");
+  const [yearFilter, setYearFilter] = useState<string>("all");
+
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ["invoices"],
     queryFn: async () => {
@@ -19,6 +24,27 @@ export function InvoicesListPage() {
       return data as Invoice[];
     },
   });
+
+  const { data: companies = [] } = useQuery({
+    queryKey: ["companies"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("companies").select("*").order("name");
+      if (error) throw error;
+      return data as Company[];
+    },
+  });
+
+  const years = useMemo(() => {
+    const set = new Set<string>();
+    invoices.forEach((i) => set.add((i.invoice_date || "").slice(0, 4)));
+    return Array.from(set).filter(Boolean).sort().reverse();
+  }, [invoices]);
+
+  const filtered = useMemo(() => invoices.filter((i) => {
+    if (companyFilter !== "all" && i.company_id !== companyFilter) return false;
+    if (yearFilter !== "all" && !(i.invoice_date || "").startsWith(yearFilter)) return false;
+    return true;
+  }), [invoices, companyFilter, yearFilter]);
 
   const viewPdf = async (invId: string, companyId: string | null) => {
     try {
@@ -45,7 +71,25 @@ export function InvoicesListPage() {
         <p className="text-sm text-muted-foreground">All generated invoices.</p>
       </div>
       <Card>
-        <CardHeader><CardTitle>History</CardTitle></CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-4 flex-wrap">
+          <CardTitle>History</CardTitle>
+          <div className="flex gap-2">
+            <Select value={companyFilter} onValueChange={setCompanyFilter}>
+              <SelectTrigger className="w-[200px]"><SelectValue placeholder="Company" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All companies</SelectItem>
+                {companies.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={yearFilter} onValueChange={setYearFilter}>
+              <SelectTrigger className="w-[120px]"><SelectValue placeholder="Year" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All years</SelectItem>
+                {years.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
         <CardContent>
           {isLoading ? <p className="text-sm text-muted-foreground">Loading...</p> : (
             <Table>
@@ -62,10 +106,10 @@ export function InvoicesListPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invoices.length === 0 && (
+                {filtered.length === 0 && (
                   <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No invoices yet.</TableCell></TableRow>
                 )}
-                {invoices.map((i) => (
+                {filtered.map((i) => (
                   <TableRow key={i.id}>
                     <TableCell className="font-mono">{i.invoice_number}</TableCell>
                     <TableCell>{i.invoice_date}</TableCell>

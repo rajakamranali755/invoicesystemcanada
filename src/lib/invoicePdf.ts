@@ -174,45 +174,44 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
   drawHeader(doc, c, tpl);
 
   const leftStart = tpl === "modern" ? 56 : 14;
+  const rightEnd = doc.internal.pageSize.getWidth() - 14;
   const startY = tpl === "modern" ? 50 : 44;
   const [pr, pg, pb] = hexToRgb(c.primary_color);
   const [ar, ag, ab] = hexToRgb(c.accent_color);
 
-  // Invoice meta
-  doc.setFontSize(10); doc.setFont("helvetica", "bold");
-  if (tpl !== "modern") doc.text("INVOICE", leftStart, startY);
-  doc.setFont("helvetica", "normal");
-  doc.text(`Invoice #: ${invoice.invoice_number}`, leftStart, startY + 6);
-  doc.text(`Date: ${invoice.invoice_date}`, leftStart, startY + 12);
+  // Invoice # (left) and Date (right) on same line — From details are already in header, not repeated.
+  doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(pr, pg, pb);
+  doc.text("INVOICE #", leftStart, startY);
+  doc.text("INVOICE DATE", rightEnd, startY, { align: "right" });
+  doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "bold"); doc.setFontSize(13);
+  doc.text(invoice.invoice_number, leftStart, startY + 7);
+  doc.text(invoice.invoice_date, rightEnd, startY + 7, { align: "right" });
+  doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(140, 140, 140);
+  doc.text("YYYY-MM-DD", rightEnd, startY + 11, { align: "right" });
+  doc.setTextColor(0, 0, 0);
 
-  // FROM (seller) / TO (purchaser) blocks
-  const fromY = startY + 22;
+  // BILL TO only (FROM = header, no repeat)
+  const toY = startY + 20;
   doc.setFont("helvetica", "bold"); doc.setTextColor(pr, pg, pb); doc.setFontSize(10);
-  doc.text("FROM", leftStart, fromY);
+  doc.text("BILL TO", leftStart, toY);
   doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-  doc.text(c.name, leftStart, fromY + 6);
-  if (c.address) doc.text(doc.splitTextToSize(c.address, 80), leftStart, fromY + 12);
-  if (c.phone) doc.text(c.phone, leftStart, fromY + 28);
-  if (c.email) doc.text(c.email, leftStart, fromY + 34);
-  if (c.tax_number) doc.text(`HST: ${c.tax_number}`, leftStart, fromY + 40);
-
-  const colTo = tpl === "modern" ? 130 : 120;
-  doc.setFont("helvetica", "bold"); doc.setTextColor(pr, pg, pb); doc.setFontSize(10);
-  doc.text("TO (BILL TO)", colTo, fromY);
-  doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-  doc.text(invoice.customer_name || "—", colTo, fromY + 6);
-  if (invoice.customer_address) doc.text(doc.splitTextToSize(invoice.customer_address, 70), colTo, fromY + 12);
-  if (invoice.customer_contact) doc.text(`Contact: ${invoice.customer_contact}`, colTo, fromY + 28);
-  if (invoice.customer_email) doc.text(invoice.customer_email, colTo, fromY + 34);
-  if (invoice.customer_tax_number) doc.text(`HST: ${invoice.customer_tax_number}`, colTo, fromY + 40);
+  doc.text(invoice.customer_name || "—", leftStart, toY + 6);
+  let yCursor = toY + 12;
+  if (invoice.customer_address) {
+    const lines = doc.splitTextToSize(invoice.customer_address, 100);
+    doc.text(lines, leftStart, yCursor); yCursor += lines.length * 4;
+  }
+  if (invoice.customer_contact) { doc.text(`Contact: ${invoice.customer_contact}`, leftStart, yCursor); yCursor += 5; }
+  if (invoice.customer_email) { doc.text(invoice.customer_email, leftStart, yCursor); yCursor += 5; }
+  if (invoice.customer_tax_number) { doc.text(`HST: ${invoice.customer_tax_number}`, leftStart, yCursor); yCursor += 5; }
 
   autoTable(doc, {
-    startY: fromY + 50,
+    startY: yCursor + 6,
     margin: { left: leftStart, right: 14 },
-    head: [["Description", "Qty", "Rate", "Subtotal", "GST", "Total"]],
+    head: [["Description", "Qty", "Rate", "Total"]],
     body: items.map((r) => [
       r.item_name, r.quantity,
-      fmtMoney(r.unit_price), fmtMoney(r.subtotal), fmtMoney(r.gst_amount), fmtMoney(r.line_total),
+      fmtMoney(r.unit_price), fmtMoney(r.subtotal),
     ]),
     headStyles: { fillColor: [pr, pg, pb], textColor: 255, fontStyle: "bold" },
     alternateRowStyles: tpl === "vibrant" ? { fillColor: [255, 245, 240] } : tpl === "modern" ? { fillColor: [240, 248, 245] } : { fillColor: [245, 243, 238] },
@@ -223,7 +222,7 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
   const totalsX = doc.internal.pageSize.getWidth() - 80;
   doc.setFontSize(10); doc.setFont("helvetica", "normal");
   doc.text(`Subtotal: ${fmtMoney(invoice.total_subtotal)}`, totalsX, y); y += 6;
-  doc.text(`GST / HST: ${fmtMoney(invoice.total_gst)}`, totalsX, y); y += 6;
+  doc.text(`HST (13%): ${fmtMoney(invoice.total_gst)}`, totalsX, y); y += 6;
   doc.setFont("helvetica", "bold"); doc.setFontSize(12);
   doc.setFillColor(pr, pg, pb); doc.setTextColor(255, 255, 255);
   doc.rect(totalsX - 4, y - 5, 75, 9, "F");
@@ -258,12 +257,22 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
     doc.text(invoice.notes, leftStart, y, { maxWidth: doc.internal.pageSize.getWidth() - leftStart - 20 });
   }
 
-  // Signature
+  // Signature — position per company setting (bottom-left or bottom-right)
   const pageH = doc.internal.pageSize.getHeight();
-  doc.setDrawColor(pr, pg, pb); doc.line(leftStart, pageH - 30, leftStart + 60, pageH - 30);
-  doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-  doc.text("Authorized Signature", leftStart, pageH - 25);
-  doc.text(c.name, leftStart, pageH - 20);
+  const pos = (c.signature_position === "left") ? "left" : "right";
+  const sigBlockW = 70;
+  const sigX = pos === "left" ? leftStart : doc.internal.pageSize.getWidth() - 14 - sigBlockW;
+  const sigBaseY = pageH - 30;
+  if (c.signature_url) {
+    try {
+      const fmt = c.signature_url.startsWith("data:image/png") ? "PNG" : "JPEG";
+      doc.addImage(c.signature_url, fmt, sigX, sigBaseY - 18, 50, 16);
+    } catch (e) { console.warn("signature image failed", e); }
+  }
+  doc.setDrawColor(pr, pg, pb); doc.line(sigX, sigBaseY, sigX + sigBlockW, sigBaseY);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(0, 0, 0);
+  doc.text("Authorized Signature", sigX, sigBaseY + 5);
+  doc.text(c.name, sigX, sigBaseY + 10);
 
   return doc;
 }

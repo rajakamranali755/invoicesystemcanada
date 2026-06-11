@@ -25,20 +25,18 @@ interface Row {
   item_name: string;
   quantity: number;
   unit_price: number;
-  gst_mode: "percent" | "amount";
-  gst_value: number;
 }
 
 const newRow = (): Row => ({
   key: Math.random().toString(36).slice(2),
   service_id: null, item_name: "",
-  quantity: 1, unit_price: 0, gst_mode: "percent", gst_value: 13,
+  quantity: 1, unit_price: 0,
 });
 
+const GST_RATE = 0.13;
 function calcRow(r: Row) {
   const subtotal = r.quantity * r.unit_price;
-  const gst = r.gst_mode === "percent" ? (subtotal * r.gst_value) / 100 : r.gst_value;
-  return { subtotal, gst, total: subtotal + gst };
+  return { subtotal };
 }
 
 export function SalesPage() {
@@ -102,19 +100,18 @@ export function SalesPage() {
       service_id: s.id,
       item_name: s.description,
       unit_price: Number(s.default_price),
-      gst_mode: "percent",
-      gst_value: 13,
       quantity: 1,
     });
   };
 
   const totals = useMemo(() => {
-    let q = 0, sub = 0, gst = 0, grand = 0;
+    let q = 0, sub = 0;
     for (const r of rows) {
       const c = calcRow(r);
-      q += r.quantity; sub += c.subtotal; gst += c.gst; grand += c.total;
+      q += r.quantity; sub += c.subtotal;
     }
-    return { q, sub, gst, grand };
+    const gst = sub * GST_RATE;
+    return { q, sub, gst, grand: sub + gst };
   }, [rows]);
 
   // Live preview disabled per request — final PDF opens on Save.
@@ -148,6 +145,7 @@ export function SalesPage() {
 
       const lines = validRows.map((r) => {
         const c = calcRow(r);
+        const gst = c.subtotal * GST_RATE;
         return {
           invoice_id: inv.id,
           company_service_id: r.service_id,
@@ -155,11 +153,11 @@ export function SalesPage() {
           serial_number: null,
           quantity: r.quantity,
           unit_price: r.unit_price,
-          gst_mode: r.gst_mode,
-          gst_value: r.gst_value,
+          gst_mode: "percent",
+          gst_value: 13,
           subtotal: c.subtotal,
-          gst_amount: c.gst,
-          line_total: c.total,
+          gst_amount: gst,
+          line_total: c.subtotal + gst,
         };
       });
       const { error: lErr } = await supabase.from("invoice_items").insert(lines);
@@ -238,11 +236,7 @@ export function SalesPage() {
                 <TableHead className="min-w-[260px]">Service</TableHead>
                 <TableHead className="text-right">Qty</TableHead>
                 <TableHead className="text-right">Unit Price</TableHead>
-                <TableHead>GST Mode</TableHead>
-                <TableHead className="text-right">GST Value</TableHead>
                 <TableHead className="text-right">Subtotal</TableHead>
-                <TableHead className="text-right">GST</TableHead>
-                <TableHead className="text-right">Total</TableHead>
                 <TableHead></TableHead>
               </TableRow>
             </TableHeader>
@@ -268,20 +262,7 @@ export function SalesPage() {
                       onChange={(e) => updateRow(r.key, { quantity: parseInt(e.target.value) || 0 })} /></TableCell>
                     <TableCell><Input type="number" step="0.01" className="w-24 text-right" value={r.unit_price}
                       onChange={(e) => updateRow(r.key, { unit_price: parseFloat(e.target.value) || 0 })} /></TableCell>
-                    <TableCell>
-                      <Select value={r.gst_mode} onValueChange={(v) => updateRow(r.key, { gst_mode: v as any })}>
-                        <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="percent">Percent %</SelectItem>
-                          <SelectItem value="amount">Amount $</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell><Input type="number" step="0.01" className="w-24 text-right" value={r.gst_value}
-                      onChange={(e) => updateRow(r.key, { gst_value: parseFloat(e.target.value) || 0 })} /></TableCell>
-                    <TableCell className="text-right">{fmtMoney(c.subtotal)}</TableCell>
-                    <TableCell className="text-right">{fmtMoney(c.gst)}</TableCell>
-                    <TableCell className="text-right font-semibold">{fmtMoney(c.total)}</TableCell>
+                    <TableCell className="text-right font-semibold">{fmtMoney(c.subtotal)}</TableCell>
                     <TableCell>
                       <Button size="icon" variant="ghost" onClick={() => setRows((rs) => rs.filter((x) => x.key !== r.key))}>
                         <Trash2 className="h-4 w-4 text-destructive" />
@@ -300,7 +281,7 @@ export function SalesPage() {
           <div className="ml-auto max-w-sm space-y-2 text-sm">
             <Row label="Total Quantity" value={totals.q.toString()} />
             <Row label="Total Subtotal" value={fmtMoney(totals.sub)} />
-            <Row label="Total GST" value={fmtMoney(totals.gst)} />
+            <Row label="HST (13%)" value={fmtMoney(totals.gst)} />
             <div className="border-t pt-2">
               <Row label="Grand Total" value={fmtMoney(totals.grand)} bold />
             </div>
