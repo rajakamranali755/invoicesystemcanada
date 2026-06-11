@@ -281,7 +281,7 @@ export function SalesPage() {
           <div className="ml-auto max-w-sm space-y-2 text-sm">
             <Row label="Total Quantity" value={totals.q.toString()} />
             <Row label="Total Subtotal" value={fmtMoney(totals.sub)} />
-            <Row label="Total GST" value={fmtMoney(totals.gst)} />
+            <Row label="HST (13%)" value={fmtMoney(totals.gst)} />
             <div className="border-t pt-2">
               <Row label="Grand Total" value={fmtMoney(totals.grand)} bold />
             </div>
