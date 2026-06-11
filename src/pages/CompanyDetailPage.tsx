@@ -15,6 +15,7 @@ import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { useRef } from "react";
+import { formatHst, isValidHst, HST_PLACEHOLDER } from "@/lib/hst";
 
 const TEMPLATES = [
   { value: "classic", label: "Classic (Navy / Gold)" },
@@ -67,14 +68,24 @@ export function CompanyDetailPage() {
   const saveCompany = useMutation({
     mutationFn: async () => {
       if (!form) return;
+      if (form.tax_number && !isValidHst(form.tax_number)) {
+        throw new Error("HST must be 9 digits (format: 12345 6789).");
+      }
       const { error } = await supabase.from("companies").update({
         name: form.name, address: form.address, phone: form.phone, email: form.email,
         tax_number: form.tax_number, logo_url: form.logo_url,
         primary_color: form.primary_color, accent_color: form.accent_color,
         font_family: form.font_family, design_template: form.design_template, terms: form.terms,
         role: form.role,
+        signature_url: form.signature_url ?? "",
+        signature_position: form.signature_position ?? "right",
       }).eq("id", id);
-      if (error) throw error;
+      if (error) {
+        if ((error as { code?: string }).code === "23505") {
+          throw new Error("Another company already uses this HST number.");
+        }
+        throw error;
+      }
     },
     onSuccess: () => { toast.success("Company saved"); qc.invalidateQueries({ queryKey: ["companies"] }); qc.invalidateQueries({ queryKey: ["company", id] }); },
     onError: (e: Error) => toast.error(e.message),
@@ -164,7 +175,16 @@ export function CompanyDetailPage() {
           <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
           <div><Label>Email</Label><Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
           <div className="md:col-span-2"><Label>Address</Label><Textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
-          <div><Label>Tax / HST</Label><Input value={form.tax_number} onChange={(e) => setForm({ ...form, tax_number: e.target.value })} /></div>
+          <div>
+            <Label>HST</Label>
+            <Input
+              value={form.tax_number}
+              placeholder={HST_PLACEHOLDER}
+              maxLength={10}
+              onChange={(e) => setForm({ ...form, tax_number: formatHst(e.target.value) })}
+            />
+            <p className="text-[10px] text-muted-foreground mt-1">9 digits, format 12345 6789. Must be unique.</p>
+          </div>
           <div className="md:col-span-2"><Label>Logo URL</Label><Input value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} placeholder="https://..." /></div>
           <div>
             <Label>Role</Label>
@@ -182,6 +202,36 @@ export function CompanyDetailPage() {
           </div>
           <div><Label>Primary Color</Label><Input type="color" value={form.primary_color} onChange={(e) => setForm({ ...form, primary_color: e.target.value })} /></div>
           <div><Label>Accent Color</Label><Input type="color" value={form.accent_color} onChange={(e) => setForm({ ...form, accent_color: e.target.value })} /></div>
+          <div>
+            <Label>Signature Position</Label>
+            <Select value={form.signature_position ?? "right"} onValueChange={(v) => setForm({ ...form, signature_position: v as "left" | "right" })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="left">Bottom Left</SelectItem>
+                <SelectItem value="right">Bottom Right</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="md:col-span-2">
+            <Label>Signature Image</Label>
+            <Input
+              type="file"
+              accept="image/png,image/jpeg"
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                const reader = new FileReader();
+                reader.onload = () => setForm({ ...form, signature_url: String(reader.result || "") });
+                reader.readAsDataURL(f);
+              }}
+            />
+            {form.signature_url && (
+              <div className="mt-2 flex items-center gap-2">
+                <img src={form.signature_url} alt="signature" className="h-12 object-contain bg-white border rounded" />
+                <Button size="sm" variant="ghost" onClick={() => setForm({ ...form, signature_url: "" })}>Remove</Button>
+              </div>
+            )}
+          </div>
           <div className="md:col-span-3"><Label>Terms & Conditions</Label><Textarea rows={6} value={form.terms} onChange={(e) => setForm({ ...form, terms: e.target.value })} /></div>
           <div className="md:col-span-3"><Button onClick={() => saveCompany.mutate()} disabled={saveCompany.isPending}><Save className="h-4 w-4 mr-1" /> Save Changes</Button></div>
         </CardContent>
