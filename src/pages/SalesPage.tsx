@@ -236,11 +236,7 @@ export function SalesPage() {
                 <TableHead className="min-w-[260px]">Service</TableHead>
                 <TableHead className="text-right">Qty</TableHead>
                 <TableHead className="text-right">Unit Price</TableHead>
-                <TableHead>GST Mode</TableHead>
-                <TableHead className="text-right">GST Value</TableHead>
                 <TableHead className="text-right">Subtotal</TableHead>
-                <TableHead className="text-right">GST</TableHead>
-                <TableHead className="text-right">Total</TableHead>
                 <TableHead></TableHead>
               </TableRow>
             </TableHeader>
@@ -266,20 +262,7 @@ export function SalesPage() {
                       onChange={(e) => updateRow(r.key, { quantity: parseInt(e.target.value) || 0 })} /></TableCell>
                     <TableCell><Input type="number" step="0.01" className="w-24 text-right" value={r.unit_price}
                       onChange={(e) => updateRow(r.key, { unit_price: parseFloat(e.target.value) || 0 })} /></TableCell>
-                    <TableCell>
-                      <Select value={r.gst_mode} onValueChange={(v) => updateRow(r.key, { gst_mode: v as any })}>
-                        <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="percent">Percent %</SelectItem>
-                          <SelectItem value="amount">Amount $</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell><Input type="number" step="0.01" className="w-24 text-right" value={r.gst_value}
-                      onChange={(e) => updateRow(r.key, { gst_value: parseFloat(e.target.value) || 0 })} /></TableCell>
-                    <TableCell className="text-right">{fmtMoney(c.subtotal)}</TableCell>
-                    <TableCell className="text-right">{fmtMoney(c.gst)}</TableCell>
-                    <TableCell className="text-right font-semibold">{fmtMoney(c.total)}</TableCell>
+                    <TableCell className="text-right font-semibold">{fmtMoney(c.subtotal)}</TableCell>
                     <TableCell>
                       <Button size="icon" variant="ghost" onClick={() => setRows((rs) => rs.filter((x) => x.key !== r.key))}>
                         <Trash2 className="h-4 w-4 text-destructive" />
