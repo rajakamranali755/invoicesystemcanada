@@ -27,6 +27,8 @@ export interface Company {
   terms: string;
   role: "seller" | "purchaser" | "both";
   created_at: string;
+  signature_url?: string;
+  signature_position?: "left" | "right";
 }
 
 export interface CompanyService {
