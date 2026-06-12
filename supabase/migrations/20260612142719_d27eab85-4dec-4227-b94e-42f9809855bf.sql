@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS companies_name_unique ON public.companies (LOWER(name));
