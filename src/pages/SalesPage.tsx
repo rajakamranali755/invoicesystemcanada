@@ -18,6 +18,8 @@ import { Plus, Trash2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "@tanstack/react-router";
 import { openInvoicePdf } from "@/lib/invoicePdf";
+import { formatHst, HST_PLACEHOLDER } from "@/lib/hst";
+import { formatPhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 
 interface Row {
   key: string;
@@ -50,7 +52,6 @@ export function SalesPage() {
   const [customerAddress, setCustomerAddress] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerTaxNumber, setCustomerTaxNumber] = useState("");
-  const [amountPaid, setAmountPaid] = useState(0);
   const [notes, setNotes] = useState("");
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().slice(0, 10));
 
@@ -84,8 +85,8 @@ export function SalesPage() {
     setCustomerName(c.name);
     setCustomerAddress(c.address);
     setCustomerEmail(c.email);
-    setCustomerContact(c.phone);
-    setCustomerTaxNumber(c.tax_number);
+    setCustomerContact(formatPhone(c.phone));
+    setCustomerTaxNumber(formatHst(c.tax_number));
   };
 
   useEffect(() => { setRows([newRow()]); }, [companyId]);
@@ -139,7 +140,7 @@ export function SalesPage() {
         total_subtotal: totals.sub,
         total_gst: totals.gst,
         grand_total: totals.grand,
-        amount_paid: amountPaid,
+        amount_paid: 0,
       }).select().single();
       if (iErr) throw iErr;
 
@@ -186,8 +187,7 @@ export function SalesPage() {
       </div>
 
       <Card>
-        <CardHeader><CardTitle>Issuing Company & Customer</CardTitle></CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-6">
           <div className="md:col-span-2">
             <Label>Issuing Company — FROM (Seller)</Label>
             <Select value={companyId} onValueChange={setCompanyId}>
@@ -202,8 +202,7 @@ export function SalesPage() {
               </p>
             )}
           </div>
-          <div><Label>Date</Label><Input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} /></div>
-          <div><Label>Amount Paid</Label><Input type="number" step="0.01" value={amountPaid} onChange={(e) => setAmountPaid(parseFloat(e.target.value) || 0)} /></div>
+          <div className="md:col-span-2"><Label>Date</Label><Input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} /></div>
           <div className="md:col-span-2">
             <Label>Customer Company — TO (Purchaser)</Label>
             <Select value={customerCompanyId} onValueChange={onPickPurchaser}>
@@ -213,11 +212,29 @@ export function SalesPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="md:col-span-2"><Label>Contact Person</Label><Input value={customerContact} onChange={(e) => setCustomerContact(e.target.value)} /></div>
+          <div className="md:col-span-2">
+            <Label>Contact Person</Label>
+            <Input
+              value={customerContact}
+              placeholder={PHONE_PLACEHOLDER}
+              maxLength={12}
+              onChange={(e) => setCustomerContact(formatPhone(e.target.value))}
+            />
+            <p className="text-[10px] text-muted-foreground mt-1">10 digits, format 123-456-7890.</p>
+          </div>
           <div className="md:col-span-2"><Label>Customer Name (Bill To)</Label><Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} /></div>
           <div className="md:col-span-2"><Label>Customer Email</Label><Input value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} /></div>
           <div className="md:col-span-2"><Label>Customer Address</Label><Textarea value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} /></div>
-          <div className="md:col-span-2"><Label>Customer HST / Tax #</Label><Input value={customerTaxNumber} onChange={(e) => setCustomerTaxNumber(e.target.value)} /></div>
+          <div className="md:col-span-2">
+            <Label>Customer HST / Tax #</Label>
+            <Input
+              value={customerTaxNumber}
+              placeholder={HST_PLACEHOLDER}
+              maxLength={10}
+              onChange={(e) => setCustomerTaxNumber(formatHst(e.target.value))}
+            />
+            <p className="text-[10px] text-muted-foreground mt-1">9 digits, format 12345 6789.</p>
+          </div>
           <div className="md:col-span-4"><Label>Notes / Remarks</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
         </CardContent>
       </Card>
@@ -234,9 +251,9 @@ export function SalesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead className="min-w-[260px]">Service</TableHead>
-                <TableHead className="text-right">Qty</TableHead>
-                <TableHead className="text-right">Unit Price</TableHead>
-                <TableHead className="text-right">Subtotal</TableHead>
+                <TableHead className="text-right w-24">Qty</TableHead>
+                <TableHead className="text-right w-32">Unit Price</TableHead>
+                <TableHead className="text-right w-28">Subtotal</TableHead>
                 <TableHead></TableHead>
               </TableRow>
             </TableHeader>
@@ -251,7 +268,7 @@ export function SalesPage() {
                         <SelectContent>
                           {services.map((s) => (
                             <SelectItem key={s.id} value={s.id}>
-                              {s.category ? `[${s.category}] ` : ""}{s.description}
+                              {s.category ? `[${s.category}] ` : ""}{s.description} — ${Number(s.default_price).toFixed(2)}
                             </SelectItem>
                           ))}
                         </SelectContent>

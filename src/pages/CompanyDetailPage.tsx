@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { useRef } from "react";
 import { formatHst, isValidHst, HST_PLACEHOLDER } from "@/lib/hst";
+import { formatPhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 
 const TEMPLATES = [
   { value: "classic", label: "Classic (Navy / Gold)" },
@@ -42,7 +43,7 @@ export function CompanyDetailPage() {
   const { id } = Route.useParams();
   const qc = useQueryClient();
   const [form, setForm] = useState<Company | null>(null);
-  const [newSvc, setNewSvc] = useState({ category: "", description: "", price_label: "", default_price: 0, notes: "" });
+  const [newSvc, setNewSvc] = useState({ category: "", description: "", default_price: 0, notes: "" });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: company } = useQuery({
@@ -94,10 +95,10 @@ export function CompanyDetailPage() {
   const addService = useMutation({
     mutationFn: async () => {
       if (!newSvc.description.trim()) throw new Error("Description required.");
-      const { error } = await supabase.from("company_services").insert({ ...newSvc, company_id: id });
+      const { error } = await supabase.from("company_services").insert({ ...newSvc, price_label: "", company_id: id });
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Service added"); setNewSvc({ category: "", description: "", price_label: "", default_price: 0, notes: "" }); qc.invalidateQueries({ queryKey: ["company_services", id] }); },
+    onSuccess: () => { toast.success("Service added"); setNewSvc({ category: "", description: "", default_price: 0, notes: "" }); qc.invalidateQueries({ queryKey: ["company_services", id] }); },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -122,8 +123,8 @@ export function CompanyDetailPage() {
           company_id: id,
           category: String(get(["Category", "category"]) ?? "").trim(),
           description: String(get(["Description", "description"]) ?? "").trim(),
-          price_label: String(get(["Price Label", "price_label", "PriceLabel"]) ?? "").trim(),
-          default_price: parseFloat(String(get(["Default", "Default Price", "default_price"]) ?? "0")) || 0,
+          price_label: "",
+          default_price: parseFloat(String(get(["Price", "Default", "Default Price", "default_price"]) ?? "0")) || 0,
           notes: String(get(["Notes", "notes"]) ?? "").trim(),
         };
       }).filter((r) => r.description);
@@ -152,10 +153,10 @@ export function CompanyDetailPage() {
 
   const downloadTemplate = () => {
     const data = [
-      { Category: "Consulting", Description: "Initial consultation (1 hour)", "Price Label": "$100", Default: 100, Notes: "Sample row — replace with your services" },
-      { Category: "", Description: "", "Price Label": "", Default: 0, Notes: "" },
+      { Category: "Consulting", Description: "Initial consultation (1 hour)", Price: 100, Notes: "Sample row — replace with your services" },
+      { Category: "", Description: "", Price: 0, Notes: "" },
     ];
-    const ws = XLSX.utils.json_to_sheet(data, { header: ["Category", "Description", "Price Label", "Default", "Notes"] });
+    const ws = XLSX.utils.json_to_sheet(data, { header: ["Category", "Description", "Price", "Notes"] });
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Services");
     XLSX.writeFile(wb, "services-template.xlsx");
@@ -172,7 +173,16 @@ export function CompanyDetailPage() {
         <CardHeader><CardTitle>Company Details & Branding</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-          <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+          <div>
+            <Label>Phone</Label>
+            <Input
+              value={form.phone}
+              placeholder={PHONE_PLACEHOLDER}
+              maxLength={12}
+              onChange={(e) => setForm({ ...form, phone: formatPhone(e.target.value) })}
+            />
+            <p className="text-[10px] text-muted-foreground mt-1">10 digits, format 123-456-7890.</p>
+          </div>
           <div><Label>Email</Label><Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
           <div className="md:col-span-2"><Label>Address</Label><Textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
           <div>
@@ -258,13 +268,12 @@ export function CompanyDetailPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-xs text-muted-foreground">
-            Bulk import: download the template, fill rows (columns: Category, Description, Price Label, Default, Notes), then upload. Services will be added to <strong>{form.name}</strong>.
+            Bulk import: download the template, fill rows (columns: Category, Description, Price, Notes), then upload. Services will be added to <strong>{form.name}</strong>.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-2 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-2 items-end">
             <div><Label>Category</Label><Input value={newSvc.category} onChange={(e) => setNewSvc({ ...newSvc, category: e.target.value })} /></div>
             <div className="md:col-span-2"><Label>Description</Label><Input value={newSvc.description} onChange={(e) => setNewSvc({ ...newSvc, description: e.target.value })} /></div>
-            <div><Label>Price Label</Label><Input value={newSvc.price_label} onChange={(e) => setNewSvc({ ...newSvc, price_label: e.target.value })} placeholder="$100 – $250" /></div>
-            <div><Label>Default $</Label><Input type="number" value={newSvc.default_price} onChange={(e) => setNewSvc({ ...newSvc, default_price: parseFloat(e.target.value) || 0 })} /></div>
+            <div><Label>Price $</Label><Input type="number" step="0.01" value={newSvc.default_price} onChange={(e) => setNewSvc({ ...newSvc, default_price: parseFloat(e.target.value) || 0 })} /></div>
             <Button onClick={() => addService.mutate()}><Plus className="h-4 w-4 mr-1" /> Add</Button>
           </div>
 
@@ -274,15 +283,14 @@ export function CompanyDetailPage() {
                 <TableRow>
                   <TableHead>Category</TableHead>
                   <TableHead>Description</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead className="text-right">Default $</TableHead>
+                  <TableHead className="text-right">Price $</TableHead>
                   <TableHead>Notes</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {services.length === 0 && (
-                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">
                     No services yet. Use the form above to add the first service for this company.
                   </TableCell></TableRow>
                 )}
@@ -290,7 +298,6 @@ export function CompanyDetailPage() {
                   <TableRow key={s.id}>
                     <TableCell className="text-xs text-muted-foreground">{s.category}</TableCell>
                     <TableCell>{s.description}</TableCell>
-                    <TableCell className="font-mono text-xs">{s.price_label}</TableCell>
                     <TableCell className="text-right">${Number(s.default_price).toFixed(2)}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{s.notes}</TableCell>
                     <TableCell>

@@ -50,7 +50,7 @@ export function InvoiceDetailPage() {
         </div>
       </div>
 
-      <Card className="p-10 print:shadow-none print:border-0">
+      <Card className="p-10 print:shadow-none print:border-0 overflow-hidden">
         <div className="flex justify-between items-start border-b pb-6 mb-6" style={{ borderColor: accent }}>
           <div>
             <h1 className="text-3xl font-bold tracking-tight" style={{ color: primary }}>{company?.name || "Company"}</h1>

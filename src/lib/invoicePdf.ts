@@ -219,13 +219,17 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
   });
 
   let y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
-  const totalsX = doc.internal.pageSize.getWidth() - 80;
+  const pageW = doc.internal.pageSize.getWidth();
+  const rightMargin = 14;
+  const totalsBoxW = 70;
+  const totalsBoxX = pageW - rightMargin - totalsBoxW;
+  const totalsX = totalsBoxX + 4;
   doc.setFontSize(10); doc.setFont("helvetica", "normal");
   doc.text(`Subtotal: ${fmtMoney(invoice.total_subtotal)}`, totalsX, y); y += 6;
   doc.text(`HST (13%): ${fmtMoney(invoice.total_gst)}`, totalsX, y); y += 6;
   doc.setFont("helvetica", "bold"); doc.setFontSize(12);
   doc.setFillColor(pr, pg, pb); doc.setTextColor(255, 255, 255);
-  doc.rect(totalsX - 4, y - 5, 75, 9, "F");
+  doc.rect(totalsBoxX, y - 5, totalsBoxW, 9, "F");
   doc.text(`Total Due: ${fmtMoney(invoice.grand_total)}`, totalsX, y + 1);
   doc.setTextColor(0, 0, 0);
   y += 12;
