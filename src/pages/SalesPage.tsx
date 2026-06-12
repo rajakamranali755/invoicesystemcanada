@@ -47,7 +47,6 @@ export function SalesPage() {
   const [rows, setRows] = useState<Row[]>([newRow()]);
   const [companyId, setCompanyId] = useState<string>("");
   const [customerCompanyId, setCustomerCompanyId] = useState<string>("");
-  const [customerName, setCustomerName] = useState("");
   const [customerContact, setCustomerContact] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
@@ -82,7 +81,6 @@ export function SalesPage() {
     setCustomerCompanyId(cid);
     const c = companies.find((x) => x.id === cid);
     if (!c) return;
-    setCustomerName(c.name);
     setCustomerAddress(c.address);
     setCustomerEmail(c.email);
     setCustomerContact(formatPhone(c.phone));
@@ -129,7 +127,7 @@ export function SalesPage() {
       const { data: inv, error: iErr } = await supabase.from("invoices").insert({
         invoice_number,
         company_id: companyId,
-        customer_name: customerName,
+        customer_name: companies.find((c) => c.id === customerCompanyId)?.name || "",
         customer_contact: customerContact,
         customer_address: customerAddress,
         customer_email: customerEmail,
@@ -222,7 +220,6 @@ export function SalesPage() {
             />
             <p className="text-[10px] text-muted-foreground mt-1">10 digits, format 123-456-7890.</p>
           </div>
-          <div className="md:col-span-2"><Label>Customer Name (Bill To)</Label><Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} /></div>
           <div className="md:col-span-2"><Label>Customer Email</Label><Input value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} /></div>
           <div className="md:col-span-2"><Label>Customer Address</Label><Textarea value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} /></div>
           <div className="md:col-span-2">
@@ -254,7 +251,7 @@ export function SalesPage() {
                 <TableHead className="text-right w-24">Qty</TableHead>
                 <TableHead className="text-right w-32">Unit Price</TableHead>
                 <TableHead className="text-right w-28">Subtotal</TableHead>
-                <TableHead></TableHead>
+                <TableHead className="w-12"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -275,10 +272,14 @@ export function SalesPage() {
                       </Select>
                       {r.item_name && !r.service_id && <p className="text-xs text-muted-foreground mt-1">{r.item_name}</p>}
                     </TableCell>
-                    <TableCell><Input type="number" className="w-20 text-right" value={r.quantity}
-                      onChange={(e) => updateRow(r.key, { quantity: parseInt(e.target.value) || 0 })} /></TableCell>
-                    <TableCell><Input type="number" step="0.01" className="w-24 text-right" value={r.unit_price}
-                      onChange={(e) => updateRow(r.key, { unit_price: parseFloat(e.target.value) || 0 })} /></TableCell>
+                    <TableCell className="text-right">
+                      <Input type="number" className="w-full text-right" value={r.quantity}
+                        onChange={(e) => updateRow(r.key, { quantity: parseInt(e.target.value) || 0 })} />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input type="number" step="0.01" className="w-full text-right" value={r.unit_price}
+                        onChange={(e) => updateRow(r.key, { unit_price: parseFloat(e.target.value) || 0 })} />
+                    </TableCell>
                     <TableCell className="text-right font-semibold">{fmtMoney(c.subtotal)}</TableCell>
                     <TableCell>
                       <Button size="icon" variant="ghost" onClick={() => setRows((rs) => rs.filter((x) => x.key !== r.key))}>
