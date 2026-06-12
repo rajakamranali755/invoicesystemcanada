@@ -68,6 +68,10 @@ export function CompaniesPage() {
       const { data, error } = await supabase.from("companies").insert(form).select().single();
       if (error) {
         if ((error as { code?: string }).code === "23505") {
+          const msg = (error as { message?: string }).message || "";
+          if (msg.includes("companies_name_unique")) {
+            throw new Error("A company with this name already exists.");
+          }
           throw new Error("A company with this HST number already exists.");
         }
         throw error;
