@@ -25,7 +25,7 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     // Navy bar + gold underline
     doc.setFillColor(pr, pg, pb); doc.rect(0, 0, W, 32, "F");
     doc.setFillColor(ar, ag, ab); doc.rect(0, 32, W, 2, "F");
-    doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(20);
+    doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "bold"); doc.setFontSize(20);
     doc.text(c.name.toUpperCase(), 14, 16);
     doc.setFontSize(9); doc.setFont("helvetica", "normal");
     doc.text(c.address.split("\n").join(" · "), 14, 24);
@@ -33,7 +33,7 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
   } else if (tpl === "modern") {
     // Left teal sidebar
     doc.setFillColor(pr, pg, pb); doc.rect(0, 0, 50, doc.internal.pageSize.getHeight(), "F");
-    doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "bold"); doc.setFontSize(14);
     doc.text(c.name, 6, 20, { maxWidth: 40 });
     doc.setFontSize(8); doc.setFont("helvetica", "normal");
     doc.text(c.address, 6, 40, { maxWidth: 40 });
@@ -55,7 +55,7 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
   } else if (tpl === "bold") {
     doc.setFillColor(pr, pg, pb); doc.rect(0, 0, W, 50, "F");
     doc.setFillColor(ar, ag, ab); doc.rect(0, 50, W, 6, "F");
-    doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(26);
+    doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "bold"); doc.setFontSize(26);
     doc.text(c.name.toUpperCase(), 14, 24);
     doc.setFontSize(34); doc.text("INVOICE", W - 14, 24, { align: "right" });
     doc.setFont("helvetica", "normal"); doc.setFontSize(9);
@@ -74,7 +74,7 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
   } else if (tpl === "corporate") {
     doc.setFillColor(pr, pg, pb); doc.rect(0, 0, W, 22, "F");
     doc.setFillColor(ar, ag, ab); doc.rect(0, 22, W, 14, "F");
-    doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(16);
+    doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "bold"); doc.setFontSize(16);
     doc.text(c.name, 14, 14);
     doc.setFontSize(22); doc.text("INVOICE", W - 14, 14, { align: "right" });
     doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "normal"); doc.setFontSize(9);
@@ -84,7 +84,7 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     // Stark black/white with thick rule and oversized numeral mark
     doc.setFillColor(0, 0, 0); doc.rect(0, 0, W, 40, "F");
     doc.setFillColor(ar, ag, ab); doc.rect(0, 40, W, 1.2, "F");
-    doc.setTextColor(255, 255, 255); doc.setFont("courier", "bold"); doc.setFontSize(28);
+    doc.setTextColor(0, 0, 0); doc.setFont("courier", "bold"); doc.setFontSize(28);
     doc.text("№", 14, 26);
     doc.setFont("helvetica", "bold"); doc.setFontSize(15);
     doc.text(c.name.toUpperCase(), 32, 20);
@@ -102,7 +102,7 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
       const b = Math.round(pb + (ab - pb) * t);
       doc.setFillColor(r, g, b); doc.rect(0, i, W, 1.05, "F");
     }
-    doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(24);
+    doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "bold"); doc.setFontSize(24);
     doc.text(c.name, 14, 22);
     doc.setFont("helvetica", "normal"); doc.setFontSize(9);
     doc.text(c.address.split("\n").join(" · "), 14, 30);
@@ -113,7 +113,7 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     // Decorative circles and squares around the name
     doc.setFillColor(pr, pg, pb); doc.circle(20, 22, 14, "F");
     doc.setFillColor(ar, ag, ab); doc.rect(W - 60, 8, 46, 28, "F");
-    doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(16);
+    doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "bold"); doc.setFontSize(16);
     doc.text("INV", 13, 25);
     doc.setTextColor(0, 0, 0); doc.setFontSize(15);
     doc.text(c.name.toUpperCase(), 40, 18);
@@ -121,7 +121,7 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     doc.text(c.address.split("\n").join(" · "), 40, 25);
     doc.text(`${c.phone}  ·  ${c.email}`, 40, 30);
     doc.text(`HST ${c.tax_number}`, 40, 35);
-    doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(18);
+    doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "bold"); doc.setFontSize(18);
     doc.text("INVOICE", W - 16, 26, { align: "right" });
     doc.setDrawColor(pr, pg, pb); doc.setLineWidth(0.4); doc.line(0, 40, W, 40);
   } else if (tpl === "executive") {
@@ -141,7 +141,7 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     doc.setFillColor(pr, pg, pb); doc.rect(0, 0, W, 36, "F");
     doc.setDrawColor(ar, ag, ab); doc.setLineWidth(0.5); doc.setLineDashPattern([1.5, 1.5], 0);
     doc.rect(4, 4, W - 8, 28); doc.setLineDashPattern([], 0);
-    doc.setTextColor(255, 255, 255); doc.setFont("courier", "bold"); doc.setFontSize(16);
+    doc.setTextColor(0, 0, 0); doc.setFont("courier", "bold"); doc.setFontSize(16);
     doc.text(c.name.toUpperCase(), 10, 16);
     doc.setFont("courier", "normal"); doc.setFontSize(8);
     doc.text(`// ${c.address.split("\n").join(" / ")}`, 10, 23);
@@ -152,7 +152,7 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     // Vibrant: diagonal accent block
     doc.setFillColor(pr, pg, pb); doc.rect(0, 0, W, 40, "F");
     doc.setFillColor(ar, ag, ab); doc.triangle(W - 80, 0, W, 0, W, 40, "F");
-    doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(22);
+    doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "bold"); doc.setFontSize(22);
     doc.text(c.name, 14, 18);
     doc.setFont("helvetica", "normal"); doc.setFontSize(9);
     doc.text(c.address.split("\n").join(" · "), 14, 26);
@@ -213,7 +213,7 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
       r.item_name, r.quantity,
       fmtMoney(r.unit_price), fmtMoney(r.subtotal),
     ]),
-    headStyles: { fillColor: [pr, pg, pb], textColor: 255, fontStyle: "bold" },
+    headStyles: { fillColor: [pr, pg, pb], textColor: 0, fontStyle: "bold" },
     alternateRowStyles: tpl === "vibrant" ? { fillColor: [255, 245, 240] } : tpl === "modern" ? { fillColor: [240, 248, 245] } : { fillColor: [245, 243, 238] },
     styles: { font: "helvetica", fontSize: 9 },
   });
@@ -228,7 +228,7 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
   doc.text(`Subtotal: ${fmtMoney(invoice.total_subtotal)}`, totalsX, y); y += 6;
   doc.text(`HST (13%): ${fmtMoney(invoice.total_gst)}`, totalsX, y); y += 6;
   doc.setFont("helvetica", "bold"); doc.setFontSize(12);
-  doc.setFillColor(pr, pg, pb); doc.setTextColor(255, 255, 255);
+  doc.setFillColor(pr, pg, pb); doc.setTextColor(0, 0, 0);
   doc.rect(totalsBoxX, y - 5, totalsBoxW, 9, "F");
   doc.text(`Total Due: ${fmtMoney(invoice.grand_total)}`, totalsX, y + 1);
   doc.setTextColor(0, 0, 0);
