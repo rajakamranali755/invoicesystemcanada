@@ -36,6 +36,17 @@ export function InvoiceDetailPage() {
   const downloadPdf = () => downloadInvoicePdf(invoice, items, company);
   const primary = company?.primary_color || "#0f1b3d";
   const accent = company?.accent_color || "#c9a84c";
+  // Darken light/pastel brand colors so labels stay legible on white backgrounds.
+  const readableHex = (hex: string) => {
+    const h = hex.replace("#", "");
+    const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+    const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    if (lum < 0.55) return hex;
+    const f = 0.35;
+    const to = (n: number) => Math.round(n * f).toString(16).padStart(2, "0");
+    return `#${to(r)}${to(g)}${to(b)}`;
+  };
+  const label = readableHex(primary);
   const balance = (invoice.grand_total || 0) - (invoice.amount_paid || 0);
 
   return (
@@ -53,31 +64,31 @@ export function InvoiceDetailPage() {
       <Card className="p-10 print:shadow-none print:border-0 overflow-hidden">
         <div className="flex justify-between items-start border-b pb-6 mb-6" style={{ borderColor: accent }}>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight" style={{ color: primary }}>{company?.name || "Company"}</h1>
+            <h1 className="text-3xl font-bold tracking-tight" style={{ color: label }}>{company?.name || "Company"}</h1>
             <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{company?.address}</p>
             <p className="text-xs text-muted-foreground mt-1">{company?.phone} · {company?.email}</p>
             {company?.tax_number && <p className="text-xs text-muted-foreground">HST: {company.tax_number}</p>}
           </div>
           <div className="text-right">
-            <p className="text-2xl font-bold" style={{ color: primary }}>INVOICE</p>
+            <p className="text-2xl font-bold" style={{ color: label }}>INVOICE</p>
           </div>
         </div>
 
         {/* Invoice # left, Date right — single row, no duplicate From block */}
         <div className="flex justify-between items-start mb-6">
           <div>
-            <p className="text-xs uppercase" style={{ color: primary }}>Invoice #</p>
+            <p className="text-xs uppercase" style={{ color: label }}>Invoice #</p>
             <p className="font-mono text-lg font-semibold">{invoice.invoice_number}</p>
           </div>
           <div className="text-right">
-            <p className="text-xs uppercase" style={{ color: primary }}>Invoice Date</p>
+            <p className="text-xs uppercase" style={{ color: label }}>Invoice Date</p>
             <p className="font-mono text-lg font-semibold">{invoice.invoice_date}</p>
             <p className="text-[10px] text-muted-foreground">YYYY-MM-DD</p>
           </div>
         </div>
 
         <div className="mb-6">
-            <p className="text-xs uppercase mb-1" style={{ color: primary }}>Bill To</p>
+            <p className="text-xs uppercase mb-1" style={{ color: label }}>Bill To</p>
             <p className="font-semibold">{invoice.customer_name || "—"}</p>
             {invoice.customer_address && <p className="text-sm text-muted-foreground whitespace-pre-line">{invoice.customer_address}</p>}
             <p className="text-sm text-muted-foreground">{invoice.customer_contact}</p>
@@ -122,14 +133,14 @@ export function InvoiceDetailPage() {
 
         {invoice.notes && (
           <div className="mt-8">
-            <p className="text-xs uppercase mb-1" style={{ color: primary }}>Notes</p>
+            <p className="text-xs uppercase mb-1" style={{ color: label }}>Notes</p>
             <p className="text-sm">{invoice.notes}</p>
           </div>
         )}
 
         {company?.terms && (
           <div className="mt-8">
-            <p className="text-xs uppercase mb-1" style={{ color: primary }}>Terms & Conditions</p>
+            <p className="text-xs uppercase mb-1" style={{ color: label }}>Terms & Conditions</p>
             <p className="text-xs whitespace-pre-line text-muted-foreground">{company.terms}</p>
           </div>
         )}

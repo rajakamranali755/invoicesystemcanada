@@ -16,6 +16,14 @@ function hexToRgb(hex: string): [number, number, number] {
   return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
 }
 
+// Darken an rgb triple so labels stay legible even when the brand color is light/pastel.
+function readable(r: number, g: number, b: number): [number, number, number] {
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  if (lum < 0.55) return [r, g, b]; // already dark enough
+  const f = 0.35; // darken factor
+  return [Math.round(r * f), Math.round(g * f), Math.round(b * f)];
+}
+
 function drawHeader(doc: jsPDF, c: Company, tpl: string) {
   const [pr, pg, pb] = hexToRgb(c.primary_color || "#0f1b3d");
   const [ar, ag, ab] = hexToRgb(c.accent_color || "#c9a84c");
@@ -44,7 +52,7 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
   } else if (tpl === "elegant") {
     doc.setDrawColor(pr, pg, pb); doc.setLineWidth(0.5);
     doc.line(14, 14, W - 14, 14); doc.line(14, 36, W - 14, 36);
-    doc.setTextColor(pr, pg, pb); doc.setFont("times", "bold"); doc.setFontSize(22);
+    doc.setTextColor(...readable(pr, pg, pb)); doc.setFont("times", "bold"); doc.setFontSize(22);
     doc.text(c.name, W / 2, 24, { align: "center" });
     doc.setFont("times", "italic"); doc.setFontSize(10);
     doc.text(c.address.split("\n").join(" · "), W / 2, 31, { align: "center" });
@@ -62,7 +70,7 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     doc.text(c.address.split("\n").join("  ·  "), 14, 34);
     doc.text(`${c.phone}  ·  ${c.email}  ·  HST ${c.tax_number}`, 14, 42);
   } else if (tpl === "minimal") {
-    doc.setTextColor(pr, pg, pb); doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+    doc.setTextColor(...readable(pr, pg, pb)); doc.setFont("helvetica", "bold"); doc.setFontSize(11);
     doc.text(c.name.toUpperCase(), 14, 18);
     doc.setTextColor(120, 120, 120); doc.setFont("helvetica", "normal"); doc.setFontSize(8);
     doc.text(c.address.split("\n").join(" / "), 14, 24);
@@ -128,7 +136,7 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     // Serif executive: double rule with right-aligned brand
     doc.setDrawColor(pr, pg, pb); doc.setLineWidth(1.2); doc.line(14, 12, W - 14, 12);
     doc.setLineWidth(0.3); doc.line(14, 14.5, W - 14, 14.5);
-    doc.setTextColor(pr, pg, pb); doc.setFont("times", "bold"); doc.setFontSize(22);
+    doc.setTextColor(...readable(pr, pg, pb)); doc.setFont("times", "bold"); doc.setFontSize(22);
     doc.text(c.name, W - 14, 26, { align: "right" });
     doc.setFont("times", "italic"); doc.setFontSize(9); doc.setTextColor(80, 80, 80);
     doc.text(c.address.split("\n").join(" · "), W - 14, 32, { align: "right" });
@@ -180,7 +188,7 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
   const [ar, ag, ab] = hexToRgb(c.accent_color);
 
   // Invoice # (left) and Date (right) on same line — From details are already in header, not repeated.
-  doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(pr, pg, pb);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...readable(pr, pg, pb));
   doc.text("INVOICE #", leftStart, startY);
   doc.text("INVOICE DATE", rightEnd, startY, { align: "right" });
   doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "bold"); doc.setFontSize(13);
@@ -192,7 +200,7 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
 
   // BILL TO only (FROM = header, no repeat)
   const toY = startY + 20;
-  doc.setFont("helvetica", "bold"); doc.setTextColor(pr, pg, pb); doc.setFontSize(10);
+  doc.setFont("helvetica", "bold"); doc.setTextColor(...readable(pr, pg, pb)); doc.setFontSize(10);
   doc.text("BILL TO", leftStart, toY);
   doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "normal"); doc.setFontSize(9);
   doc.text(invoice.customer_name || "—", leftStart, toY + 6);
@@ -246,7 +254,7 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
   y = Math.max(y, (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 30);
   if (c.terms) {
     if (y > 240) { doc.addPage(); y = 20; }
-    doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(pr, pg, pb);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...readable(pr, pg, pb));
     doc.text("Terms & Conditions", leftStart, y); y += 5;
     doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "normal"); doc.setFontSize(8);
     const lines = doc.splitTextToSize(c.terms, doc.internal.pageSize.getWidth() - leftStart - 20);
@@ -255,7 +263,7 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
   }
 
   if (invoice.notes) {
-    doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(pr, pg, pb);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...readable(pr, pg, pb));
     doc.text("Notes", leftStart, y); y += 5;
     doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "normal"); doc.setFontSize(9);
     doc.text(invoice.notes, leftStart, y, { maxWidth: doc.internal.pageSize.getWidth() - leftStart - 20 });
