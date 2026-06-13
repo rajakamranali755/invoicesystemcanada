@@ -213,7 +213,7 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
       r.item_name, r.quantity,
       fmtMoney(r.unit_price), fmtMoney(r.subtotal),
     ]),
-    headStyles: { fillColor: [pr, pg, pb], textColor: 255, fontStyle: "bold" },
+    headStyles: { fillColor: [pr, pg, pb], textColor: 0, fontStyle: "bold" },
     alternateRowStyles: tpl === "vibrant" ? { fillColor: [255, 245, 240] } : tpl === "modern" ? { fillColor: [240, 248, 245] } : { fillColor: [245, 243, 238] },
     styles: { font: "helvetica", fontSize: 9 },
   });
