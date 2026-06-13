@@ -110,6 +110,18 @@ export function CompanyDetailPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["company_services", id] }),
   });
 
+  const deleteAllServices = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("company_services").delete().eq("company_id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("All services deleted");
+      qc.invalidateQueries({ queryKey: ["company_services", id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const bulkUpload = useMutation({
     mutationFn: async (rows: Array<Record<string, unknown>>) => {
       const normalized = rows.map((r) => {
@@ -257,6 +269,20 @@ export function CompanyDetailPage() {
             <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={bulkUpload.isPending}>
               <Upload className="h-4 w-4 mr-1" /> {bulkUpload.isPending ? "Uploading..." : "Upload XLSX/CSV"}
             </Button>
+            {services.length > 0 && (
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => {
+                  if (window.confirm(`Delete all ${services.length} services for this company?`)) {
+                    deleteAllServices.mutate();
+                  }
+                }}
+                disabled={deleteAllServices.isPending}
+              >
+                <Trash2 className="h-4 w-4 mr-1" /> {deleteAllServices.isPending ? "Deleting..." : "Delete All"}
+              </Button>
+            )}
             <input
               ref={fileInputRef}
               type="file"
