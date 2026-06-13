@@ -47,6 +47,14 @@ export function InvoiceDetailPage() {
     return `#${to(r)}${to(g)}${to(b)}`;
   };
   const label = readableHex(primary);
+  // Contrast text color (black/white) for solid primary backgrounds
+  const contrastOnHex = (hex: string) => {
+    const h = hex.replace("#", "");
+    const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+    const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return lum < 0.6 ? "#ffffff" : "#000000";
+  };
+  const onPrimary = contrastOnHex(primary);
   const balance = (invoice.grand_total || 0) - (invoice.amount_paid || 0);
 
   return (
@@ -97,7 +105,7 @@ export function InvoiceDetailPage() {
         </div>
 
         <table className="w-full text-sm">
-          <thead style={{ background: primary, color: "black" }}>
+          <thead style={{ background: primary, color: onPrimary }}>
             <tr className="text-left">
               <th className="py-2 px-2">Description</th>
               <th className="text-right">Qty</th>
@@ -121,7 +129,7 @@ export function InvoiceDetailPage() {
           <div className="w-72 space-y-1 text-sm">
             <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{fmtMoney(invoice.total_subtotal)}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">HST (13%)</span><span>{fmtMoney(invoice.total_gst)}</span></div>
-            <div className="flex justify-between pt-2 text-lg font-bold px-2 rounded" style={{ background: primary, color: "black" }}><span>Total Due</span><span>{fmtMoney(invoice.grand_total)}</span></div>
+            <div className="flex justify-between pt-2 text-lg font-bold px-2 rounded" style={{ background: primary, color: onPrimary }}><span>Total Due</span><span>{fmtMoney(invoice.grand_total)}</span></div>
             {invoice.amount_paid > 0 && (
               <>
                 <div className="flex justify-between pt-1"><span className="text-muted-foreground">Paid</span><span>{fmtMoney(invoice.amount_paid)}</span></div>
