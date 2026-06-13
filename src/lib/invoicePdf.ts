@@ -24,6 +24,12 @@ function readable(r: number, g: number, b: number): [number, number, number] {
   return [Math.round(r * f), Math.round(g * f), Math.round(b * f)];
 }
 
+// Pick black or white text based on background luminance for proper contrast.
+function contrastOn(r: number, g: number, b: number): [number, number, number] {
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return lum < 0.6 ? [255, 255, 255] : [0, 0, 0];
+}
+
 function drawHeader(doc: jsPDF, c: Company, tpl: string) {
   const [pr, pg, pb] = hexToRgb(c.primary_color || "#0f1b3d");
   const [ar, ag, ab] = hexToRgb(c.accent_color || "#c9a84c");
