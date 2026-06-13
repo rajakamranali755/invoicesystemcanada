@@ -86,7 +86,7 @@ export function InvoiceDetailPage() {
         </div>
 
         <table className="w-full text-sm">
-          <thead style={{ background: primary, color: "white" }}>
+          <thead style={{ background: primary, color: "black" }}>
             <tr className="text-left">
               <th className="py-2 px-2">Description</th>
               <th className="text-right">Qty</th>
@@ -110,7 +110,7 @@ export function InvoiceDetailPage() {
           <div className="w-72 space-y-1 text-sm">
             <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{fmtMoney(invoice.total_subtotal)}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">HST (13%)</span><span>{fmtMoney(invoice.total_gst)}</span></div>
-            <div className="flex justify-between pt-2 text-lg font-bold px-2 rounded" style={{ background: primary, color: "white" }}><span>Total Due</span><span>{fmtMoney(invoice.grand_total)}</span></div>
+            <div className="flex justify-between pt-2 text-lg font-bold px-2 rounded" style={{ background: primary, color: "black" }}><span>Total Due</span><span>{fmtMoney(invoice.grand_total)}</span></div>
             {invoice.amount_paid > 0 && (
               <>
                 <div className="flex justify-between pt-1"><span className="text-muted-foreground">Paid</span><span>{fmtMoney(invoice.amount_paid)}</span></div>
