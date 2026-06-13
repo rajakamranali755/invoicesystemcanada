@@ -36,6 +36,17 @@ export function InvoiceDetailPage() {
   const downloadPdf = () => downloadInvoicePdf(invoice, items, company);
   const primary = company?.primary_color || "#0f1b3d";
   const accent = company?.accent_color || "#c9a84c";
+  // Darken light/pastel brand colors so labels stay legible on white backgrounds.
+  const readableHex = (hex: string) => {
+    const h = hex.replace("#", "");
+    const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+    const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    if (lum < 0.55) return hex;
+    const f = 0.35;
+    const to = (n: number) => Math.round(n * f).toString(16).padStart(2, "0");
+    return `#${to(r)}${to(g)}${to(b)}`;
+  };
+  const label = readableHex(primary);
   const balance = (invoice.grand_total || 0) - (invoice.amount_paid || 0);
 
   return (
