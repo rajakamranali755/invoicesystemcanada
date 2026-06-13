@@ -16,6 +16,14 @@ function hexToRgb(hex: string): [number, number, number] {
   return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
 }
 
+// Darken an rgb triple so labels stay legible even when the brand color is light/pastel.
+function readable(r: number, g: number, b: number): [number, number, number] {
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  if (lum < 0.55) return [r, g, b]; // already dark enough
+  const f = 0.35; // darken factor
+  return [Math.round(r * f), Math.round(g * f), Math.round(b * f)];
+}
+
 function drawHeader(doc: jsPDF, c: Company, tpl: string) {
   const [pr, pg, pb] = hexToRgb(c.primary_color || "#0f1b3d");
   const [ar, ag, ab] = hexToRgb(c.accent_color || "#c9a84c");
