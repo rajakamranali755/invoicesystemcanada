@@ -110,6 +110,18 @@ export function CompanyDetailPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["company_services", id] }),
   });
 
+  const deleteAllServices = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("company_services").delete().eq("company_id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("All services deleted");
+      qc.invalidateQueries({ queryKey: ["company_services", id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const bulkUpload = useMutation({
     mutationFn: async (rows: Array<Record<string, unknown>>) => {
       const normalized = rows.map((r) => {
