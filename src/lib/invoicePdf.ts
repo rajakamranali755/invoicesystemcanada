@@ -194,6 +194,7 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
   const startY = tpl === "modern" ? 50 : 44;
   const [pr, pg, pb] = hexToRgb(c.primary_color);
   const [ar, ag, ab] = hexToRgb(c.accent_color);
+  const [tpR, tpG, tpB] = contrastOn(pr, pg, pb);
 
   // Invoice # (left) and Date (right) on same line — From details are already in header, not repeated.
   doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...readable(pr, pg, pb));
@@ -229,7 +230,7 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
       r.item_name, r.quantity,
       fmtMoney(r.unit_price), fmtMoney(r.subtotal),
     ]),
-    headStyles: { fillColor: [pr, pg, pb], textColor: 0, fontStyle: "bold" },
+    headStyles: { fillColor: [pr, pg, pb], textColor: [tpR, tpG, tpB], fontStyle: "bold" },
     alternateRowStyles: tpl === "vibrant" ? { fillColor: [255, 245, 240] } : tpl === "modern" ? { fillColor: [240, 248, 245] } : { fillColor: [245, 243, 238] },
     styles: { font: "helvetica", fontSize: 9 },
   });
@@ -244,7 +245,7 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
   doc.text(`Subtotal: ${fmtMoney(invoice.total_subtotal)}`, totalsX, y); y += 6;
   doc.text(`HST (13%): ${fmtMoney(invoice.total_gst)}`, totalsX, y); y += 6;
   doc.setFont("helvetica", "bold"); doc.setFontSize(12);
-  doc.setFillColor(pr, pg, pb); doc.setTextColor(0, 0, 0);
+  doc.setFillColor(pr, pg, pb); doc.setTextColor(tpR, tpG, tpB);
   doc.rect(totalsBoxX, y - 5, totalsBoxW, 9, "F");
   doc.text(`Total Due: ${fmtMoney(invoice.grand_total)}`, totalsX, y + 1);
   doc.setTextColor(0, 0, 0);
