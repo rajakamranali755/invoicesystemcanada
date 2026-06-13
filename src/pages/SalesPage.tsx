@@ -248,8 +248,8 @@ export function SalesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead className="min-w-[260px]">Service</TableHead>
-                <TableHead className="text-right w-24">Qty</TableHead>
-                <TableHead className="text-right w-32">Unit Price</TableHead>
+                <TableHead className="text-center w-24">Qty</TableHead>
+                <TableHead className="text-center w-32">Unit Price</TableHead>
                 <TableHead className="text-right w-28">Subtotal</TableHead>
                 <TableHead className="w-12"></TableHead>
               </TableRow>
@@ -272,12 +272,12 @@ export function SalesPage() {
                       </Select>
                       {r.item_name && !r.service_id && <p className="text-xs text-muted-foreground mt-1">{r.item_name}</p>}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <Input type="number" className="w-full text-right" value={r.quantity}
+                    <TableCell className="text-center">
+                      <Input type="number" className="w-full text-center" value={r.quantity}
                         onChange={(e) => updateRow(r.key, { quantity: parseInt(e.target.value) || 0 })} />
                     </TableCell>
-                    <TableCell className="text-right">
-                      <Input type="number" step="0.01" className="w-full text-right" value={r.unit_price}
+                    <TableCell className="text-center">
+                      <Input type="number" step="0.01" className="w-full text-center" value={r.unit_price}
                         onChange={(e) => updateRow(r.key, { unit_price: parseFloat(e.target.value) || 0 })} />
                     </TableCell>
                     <TableCell className="text-right font-semibold">{fmtMoney(c.subtotal)}</TableCell>
