@@ -269,6 +269,20 @@ export function CompanyDetailPage() {
             <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={bulkUpload.isPending}>
               <Upload className="h-4 w-4 mr-1" /> {bulkUpload.isPending ? "Uploading..." : "Upload XLSX/CSV"}
             </Button>
+            {services.length > 0 && (
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => {
+                  if (window.confirm(`Delete all ${services.length} services for this company?`)) {
+                    deleteAllServices.mutate();
+                  }
+                }}
+                disabled={deleteAllServices.isPending}
+              >
+                <Trash2 className="h-4 w-4 mr-1" /> {deleteAllServices.isPending ? "Deleting..." : "Delete All"}
+              </Button>
+            )}
             <input
               ref={fileInputRef}
               type="file"
