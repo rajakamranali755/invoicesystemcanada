@@ -29,6 +29,8 @@ export interface Company {
   created_at: string;
   signature_url?: string;
   signature_position?: "left" | "right";
+  website?: string;
+  social_links?: string;
 }
 
 export interface CompanyService {

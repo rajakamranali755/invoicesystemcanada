@@ -14,6 +14,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { buildInvoicePdf } from "@/lib/invoicePdf";
 import { formatHst, isValidHst, HST_PLACEHOLDER } from "@/lib/hst";
+import { formatPhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 
 const TEMPLATES = [
   { value: "classic", label: "Classic (Navy / Gold)" },
@@ -35,6 +36,7 @@ const empty = {
   primary_color: "#0f1b3d", accent_color: "#c9a84c", font_family: "helvetica",
   design_template: "classic", terms: "", role: "seller" as "seller" | "purchaser" | "both",
   signature_url: "", signature_position: "right" as "left" | "right",
+  website: "", social_links: "",
 };
 
 const ROLES = [
@@ -133,7 +135,16 @@ export function CompaniesPage() {
               Tip: After saving, you'll be taken to this company's page where you can add its services & pricing.
             </p>
             <div><Label>Name *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-            <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+            <div>
+              <Label>Phone</Label>
+              <Input
+                value={form.phone}
+                placeholder={PHONE_PLACEHOLDER}
+                maxLength={12}
+                onChange={(e) => setForm({ ...form, phone: formatPhone(e.target.value) })}
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">10 digits, format 123-456-7890.</p>
+            </div>
             <div><Label>Email</Label><Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
             <div className="md:col-span-2"><Label>Address</Label><Textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
             <div>
@@ -147,6 +158,8 @@ export function CompaniesPage() {
               <p className="text-[10px] text-muted-foreground mt-1">9 digits, auto-formatted as 12345 6789. Must be unique.</p>
             </div>
             <div><Label>Logo URL</Label><Input value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} placeholder="https://..." /></div>
+            <div><Label>Website</Label><Input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="https://example.com" /></div>
+            <div className="md:col-span-2"><Label>Social Media Links</Label><Textarea rows={2} value={form.social_links} onChange={(e) => setForm({ ...form, social_links: e.target.value })} placeholder="Facebook: fb.com/...&#10;Instagram: @yourbrand" /></div>
             <div>
               <Label>Role *</Label>
               <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v as typeof form.role })}>
