@@ -82,27 +82,44 @@ export function InvoiceDetailPage() {
           </div>
         </div>
 
-        {/* Invoice # left, Date right — single row, no duplicate From block */}
+        {/* Invoice # / Date — single-line each */}
         <div className="flex justify-between items-start mb-6">
-          <div>
-            <p className="text-xs uppercase" style={{ color: label }}>Invoice #</p>
-            <p className="font-mono text-lg font-semibold">{invoice.invoice_number}</p>
-          </div>
+          <p className="font-mono text-lg font-semibold">
+            <span className="text-xs uppercase mr-2" style={{ color: label }}>Invoice #</span>
+            {invoice.invoice_number}
+          </p>
           <div className="text-right">
-            <p className="text-xs uppercase" style={{ color: label }}>Invoice Date</p>
-            <p className="font-mono text-lg font-semibold">{invoice.invoice_date}</p>
+            <p className="font-mono text-lg font-semibold">
+              <span className="text-xs uppercase mr-2" style={{ color: label }}>Invoice Date</span>
+              {invoice.invoice_date}
+            </p>
             <p className="text-[10px] text-muted-foreground">YYYY-MM-DD</p>
           </div>
         </div>
 
+        {/* Bill To — left: name/address/HST · right: contact/email/website/social */}
         <div className="mb-6">
-            <p className="text-xs uppercase mb-1" style={{ color: label }}>Bill To</p>
-            <p className="font-semibold">{invoice.customer_name || "—"}</p>
-            {invoice.customer_address && <p className="text-sm text-muted-foreground whitespace-pre-line">{invoice.customer_address}</p>}
-            <p className="text-sm text-muted-foreground">{invoice.customer_contact}</p>
-            {invoice.customer_email && <p className="text-sm text-muted-foreground">{invoice.customer_email}</p>}
-            {invoice.customer_tax_number && <p className="text-xs text-muted-foreground">HST: {invoice.customer_tax_number}</p>}
+          <p className="text-xs uppercase mb-1" style={{ color: label }}>Bill To</p>
+          <div className="flex justify-between items-start gap-6">
+            <div className="min-w-0">
+              <p className="font-semibold">{invoice.customer_name || "—"}</p>
+              {invoice.customer_address && <p className="text-sm text-muted-foreground whitespace-pre-line">{invoice.customer_address}</p>}
+              {invoice.customer_tax_number && <p className="text-xs text-muted-foreground">HST: {invoice.customer_tax_number}</p>}
+            </div>
+            <div className="text-right text-sm text-muted-foreground min-w-0">
+              {invoice.customer_contact && <p>{invoice.customer_contact}</p>}
+              {invoice.customer_email && <p>{invoice.customer_email}</p>}
+            </div>
+          </div>
         </div>
+
+        {/* Issuer contact details — parallel to company name block (right side under header is already shown above) */}
+        {(company?.website || company?.social_links) && (
+          <div className="mb-6 text-right text-xs text-muted-foreground whitespace-pre-line">
+            {company?.website && <p>{company.website}</p>}
+            {company?.social_links && <p>{company.social_links}</p>}
+          </div>
+        )}
 
         <table className="w-full text-sm">
           <thead style={{ background: primary, color: onPrimary }}>
