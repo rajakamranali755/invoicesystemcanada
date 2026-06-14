@@ -30,8 +30,10 @@ export type Database = {
           role: string
           signature_position: string
           signature_url: string
+          social_links: string
           tax_number: string
           terms: string
+          website: string
         }
         Insert: {
           accent_color?: string
@@ -48,8 +50,10 @@ export type Database = {
           role?: string
           signature_position?: string
           signature_url?: string
+          social_links?: string
           tax_number?: string
           terms?: string
+          website?: string
         }
         Update: {
           accent_color?: string
@@ -66,8 +70,10 @@ export type Database = {
           role?: string
           signature_position?: string
           signature_url?: string
+          social_links?: string
           tax_number?: string
           terms?: string
+          website?: string
         }
         Relationships: []
       }
