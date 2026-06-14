@@ -80,6 +80,8 @@ export function CompanyDetailPage() {
         role: form.role,
         signature_url: form.signature_url ?? "",
         signature_position: form.signature_position ?? "right",
+        website: form.website ?? "",
+        social_links: form.social_links ?? "",
       }).eq("id", id);
       if (error) {
         if ((error as { code?: string }).code === "23505") {
@@ -196,6 +198,8 @@ export function CompanyDetailPage() {
             <p className="text-[10px] text-muted-foreground mt-1">9 digits, format 12345 6789. Must be unique.</p>
           </div>
           <div className="md:col-span-2"><Label>Logo URL</Label><Input value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} placeholder="https://..." /></div>
+          <div><Label>Website</Label><Input value={form.website ?? ""} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="https://example.com" /></div>
+          <div className="md:col-span-2"><Label>Social Media Links</Label><Textarea rows={2} value={form.social_links ?? ""} onChange={(e) => setForm({ ...form, social_links: e.target.value })} placeholder="Facebook: fb.com/...&#10;Instagram: @yourbrand" /></div>
           <div>
             <Label>Role</Label>
             <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v as Company["role"] })}>

@@ -197,30 +197,54 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
   const [tpR, tpG, tpB] = contrastOn(pr, pg, pb);
 
   // Invoice # (left) and Date (right) on same line — From details are already in header, not repeated.
-  doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...readable(pr, pg, pb));
-  doc.text("INVOICE #", leftStart, startY);
-  doc.text("INVOICE DATE", rightEnd, startY, { align: "right" });
-  doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "bold"); doc.setFontSize(13);
-  doc.text(invoice.invoice_number, leftStart, startY + 7);
-  doc.text(invoice.invoice_date, rightEnd, startY + 7, { align: "right" });
+  // Invoice # / Invoice Date — single line each
+  const [lr, lg, lb] = readable(pr, pg, pb);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.setTextColor(0, 0, 0);
+  doc.setTextColor(lr, lg, lb); doc.setFontSize(9);
+  const invHashLabel = "INVOICE #  ";
+  doc.text(invHashLabel, leftStart, startY);
+  const labelW = doc.getTextWidth(invHashLabel);
+  doc.setTextColor(0, 0, 0); doc.setFontSize(12);
+  doc.text(invoice.invoice_number, leftStart + labelW, startY);
+  // Right: date label + value on same line
+  doc.setTextColor(0, 0, 0); doc.setFontSize(12); doc.setFont("helvetica", "bold");
+  const dateW = doc.getTextWidth(invoice.invoice_date);
+  doc.text(invoice.invoice_date, rightEnd, startY, { align: "right" });
+  doc.setFontSize(9); doc.setTextColor(lr, lg, lb);
+  doc.text("INVOICE DATE", rightEnd - dateW - 3, startY, { align: "right" });
   doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(140, 140, 140);
-  doc.text("YYYY-MM-DD", rightEnd, startY + 11, { align: "right" });
+  doc.text("YYYY-MM-DD", rightEnd, startY + 4, { align: "right" });
   doc.setTextColor(0, 0, 0);
 
-  // BILL TO only (FROM = header, no repeat)
-  const toY = startY + 20;
-  doc.setFont("helvetica", "bold"); doc.setTextColor(...readable(pr, pg, pb)); doc.setFontSize(10);
+  // Issuer website / social — right-aligned, parallel to company name in header
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(80, 80, 80);
+  let issuerY = startY + 10;
+  if (c.website) { doc.text(c.website, rightEnd, issuerY, { align: "right" }); issuerY += 4; }
+  if (c.social_links) {
+    const sLines = doc.splitTextToSize(c.social_links, 80);
+    doc.text(sLines, rightEnd, issuerY, { align: "right" }); issuerY += sLines.length * 4;
+  }
+  doc.setTextColor(0, 0, 0);
+
+  // BILL TO — left: name/address/HST · right: contact/email
+  const toY = startY + 14;
+  doc.setFont("helvetica", "bold"); doc.setTextColor(lr, lg, lb); doc.setFontSize(10);
   doc.text("BILL TO", leftStart, toY);
   doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
   doc.text(invoice.customer_name || "—", leftStart, toY + 6);
+  doc.setFont("helvetica", "normal");
   let yCursor = toY + 12;
   if (invoice.customer_address) {
     const lines = doc.splitTextToSize(invoice.customer_address, 100);
     doc.text(lines, leftStart, yCursor); yCursor += lines.length * 4;
   }
-  if (invoice.customer_contact) { doc.text(`Contact: ${invoice.customer_contact}`, leftStart, yCursor); yCursor += 5; }
-  if (invoice.customer_email) { doc.text(invoice.customer_email, leftStart, yCursor); yCursor += 5; }
   if (invoice.customer_tax_number) { doc.text(`HST: ${invoice.customer_tax_number}`, leftStart, yCursor); yCursor += 5; }
+  // Right column (parallel)
+  let rCursor = toY + 6;
+  if (invoice.customer_contact) { doc.text(invoice.customer_contact, rightEnd, rCursor, { align: "right" }); rCursor += 5; }
+  if (invoice.customer_email) { doc.text(invoice.customer_email, rightEnd, rCursor, { align: "right" }); rCursor += 5; }
+  yCursor = Math.max(yCursor, rCursor);
 
   autoTable(doc, {
     startY: yCursor + 6,
