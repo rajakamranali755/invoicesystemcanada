@@ -216,6 +216,16 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
   doc.text("YYYY-MM-DD", rightEnd, startY + 4, { align: "right" });
   doc.setTextColor(0, 0, 0);
 
+  // Issuer website / social — right-aligned, parallel to company name in header
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(80, 80, 80);
+  let issuerY = startY + 10;
+  if (c.website) { doc.text(c.website, rightEnd, issuerY, { align: "right" }); issuerY += 4; }
+  if (c.social_links) {
+    const sLines = doc.splitTextToSize(c.social_links, 80);
+    doc.text(sLines, rightEnd, issuerY, { align: "right" }); issuerY += sLines.length * 4;
+  }
+  doc.setTextColor(0, 0, 0);
+
   // BILL TO — left: name/address/HST · right: contact/email
   const toY = startY + 14;
   doc.setFont("helvetica", "bold"); doc.setTextColor(lr, lg, lb); doc.setFontSize(10);
