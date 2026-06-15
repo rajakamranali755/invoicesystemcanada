@@ -265,7 +265,7 @@ export function SalesPage() {
                         <SelectContent>
                           {services.map((s) => (
                             <SelectItem key={s.id} value={s.id}>
-                              {s.category ? `[${s.category}] ` : ""}{s.description} — ${Number(s.default_price).toFixed(2)}
+                              {s.category ? `[${s.category}] ` : ""}{s.description} — {fmtMoney(s.default_price)}
                             </SelectItem>
                           ))}
                         </SelectContent>
