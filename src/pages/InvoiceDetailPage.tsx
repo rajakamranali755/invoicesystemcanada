@@ -70,15 +70,17 @@ export function InvoiceDetailPage() {
       </div>
 
       <Card className="p-10 print:shadow-none print:border-0 overflow-hidden">
-        <div className="flex justify-between items-start border-b pb-6 mb-6" style={{ borderColor: accent }}>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight" style={{ color: label }}>{company?.name || "Company"}</h1>
+        <div className="flex justify-between items-start border-b pb-6 mb-6 gap-6" style={{ borderColor: accent }}>
+          <div className="min-w-0">
+            <h1 className="text-3xl font-bold tracking-tight italic" style={{ color: label, fontFamily: "Georgia, 'Times New Roman', serif" }}>{company?.name || "Company"}</h1>
             <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{company?.address}</p>
-            <p className="text-xs text-muted-foreground mt-1">{company?.phone} · {company?.email}</p>
-            {company?.tax_number && <p className="text-xs text-muted-foreground">HST: {company.tax_number}</p>}
           </div>
-          <div className="text-right">
-            <p className="text-2xl font-bold" style={{ color: label }}>INVOICE</p>
+          <div className="text-right text-xs text-muted-foreground min-w-0 whitespace-pre-line">
+            {company?.phone && <p>{company.phone}</p>}
+            {company?.email && <p>{company.email}</p>}
+            {company?.tax_number && <p>HST: {company.tax_number}</p>}
+            {company?.website && <p>{company.website}</p>}
+            {company?.social_links && <p>{company.social_links}</p>}
           </div>
         </div>
 
