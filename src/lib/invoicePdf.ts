@@ -200,7 +200,9 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
 
   // Seller contact details — right-aligned, parallel to seller name in header
   doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(80, 80, 80);
-  let sellerRY = startY;
+  // Align seller contact to the company name Y inside the header (~18 for most templates)
+  const contactStartY = tpl === "modern" ? 20 : tpl === "elegant" ? 22 : tpl === "bold" ? 18 : tpl === "corporate" ? 10 : tpl === "classic" ? 14 : tpl === "executive" ? 22 : tpl === "monochrome" ? 18 : tpl === "gradient" ? 18 : tpl === "geometric" ? 18 : tpl === "industrial" ? 14 : tpl === "minimal" ? 14 : 18;
+  let sellerRY = contactStartY;
   if (c.phone) { doc.text(c.phone, rightEnd, sellerRY, { align: "right" }); sellerRY += 4; }
   if (c.email) { doc.text(c.email, rightEnd, sellerRY, { align: "right" }); sellerRY += 4; }
   if (c.tax_number) { doc.text(`HST: ${c.tax_number}`, rightEnd, sellerRY, { align: "right" }); sellerRY += 4; }
@@ -212,7 +214,7 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
   doc.setTextColor(0, 0, 0);
 
   // Invoice # (left) — single line
-  const metaY = Math.max(startY, sellerRY) + 6;
+  const metaY = Math.max(sellerRY, startY) + 6;
   doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(lr, lg, lb);
   const invHashLabel = "INVOICE #  ";
   doc.text(invHashLabel, leftStart, metaY);
@@ -253,6 +255,12 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
     startY: yCursor + 6,
     margin: { left: leftStart, right: 14 },
     head: [["Description", "Qty", "Rate", "Total"]],
+    didParseCell: (data: any) => {
+      if (data.column.index === 0) data.cell.styles.halign = "left";
+      if (data.column.index === 1) data.cell.styles.halign = "center";
+      if (data.column.index === 2) data.cell.styles.halign = "right";
+      if (data.column.index === 3) data.cell.styles.halign = "right";
+    },
     body: items.map((r) => [
       r.item_name, r.quantity,
       fmtMoney(r.unit_price), fmtMoney(r.subtotal),
@@ -262,10 +270,11 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
     styles: { font: "helvetica", fontSize: 9 },
     columnStyles: {
       0: { halign: "left" },
-      1: { halign: "center", cellWidth: 18 },
-      2: { halign: "right", cellWidth: 32 },
-      3: { halign: "right", cellWidth: 36 },
+      1: { halign: "center", cellWidth: 16 },
+      2: { halign: "right", cellWidth: 42 },
+      3: { halign: "right", cellWidth: 42 },
     },
+    tableWidth: "auto",
   });
 
   let y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;

@@ -84,7 +84,7 @@ export function CompaniesPage() {
       toast.success("Company added — now add its services");
       setForm(empty); setOpen(false);
       qc.invalidateQueries({ queryKey: ["companies"] });
-      navigate({ to: "/companies/$id", params: { id: c.id } });
+      navigate(`/companies/${c.id}`);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -270,7 +270,7 @@ function CompanyCard({ c, onDelete }: { c: Company; onDelete: (id: string) => vo
         </p>
         <div className="mt-auto flex gap-2">
           <Button asChild size="sm" variant="outline" className="flex-1">
-            <Link to="/companies/$id" params={{ id: c.id }}>
+            <Link to={`/companies/${c.id}`}>
               <Settings className="h-4 w-4 mr-1" /> Manage
             </Link>
           </Button>

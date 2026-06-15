@@ -70,19 +70,21 @@ export function InvoiceDetailPage() {
       </div>
 
       <Card className="p-10 print:shadow-none print:border-0 overflow-hidden">
-        <div className="flex justify-between items-start border-b pb-6 mb-6 gap-6" style={{ borderColor: accent }}>
-          <div className="min-w-0">
-            <h1 className="text-3xl font-bold tracking-tight italic" style={{ color: label, fontFamily: "Georgia, 'Times New Roman', serif" }}>{company?.name || "Company"}</h1>
-            <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{company?.address}</p>
-          </div>
-          <div className="text-right text-xs text-muted-foreground min-w-0 whitespace-pre-line">
-            {company?.phone && <p>{company.phone}</p>}
-            {company?.email && <p>{company.email}</p>}
-            {company?.tax_number && <p>HST: {company.tax_number}</p>}
-            {company?.website && <p>{company.website}</p>}
-            {company?.social_links && <p>{company.social_links}</p>}
-          </div>
-        </div>
+       <div className="border-b pb-6 mb-6" style={{ borderColor: accent }}>
+  <div className="flex justify-between items-start gap-6">
+    <div className="min-w-0">
+      <h1 className="text-3xl font-bold tracking-tight italic" style={{ color: label, fontFamily: "Georgia, 'Times New Roman', serif" }}>{company?.name || "Company"}</h1>
+      <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{company?.address}</p>
+    </div>
+<div className="text-right text-xs text-muted-foreground shrink-0 self-start mt-0">
+      {company?.phone && <p>{company.phone}</p>}
+      {company?.email && <p>{company.email}</p>}
+      {company?.tax_number && <p>HST: {company.tax_number}</p>}
+      {company?.website && <p>{company.website}</p>}
+      {company?.social_links && <p>{company.social_links}</p>}
+    </div>
+  </div>
+</div>
 
         {/* Invoice # / Date — single-line each */}
         <div className="flex justify-between items-start mb-6">
@@ -103,7 +105,7 @@ export function InvoiceDetailPage() {
         <div className="mb-6">
           <p className="text-xs uppercase font-bold" style={{ color: label }}>Bill To</p>
           <div className="h-3" />
-          <div className="flex justify-between items-start gap-6">
+<div className="flex justify-between items-start gap-6 w-full">
             <div className="min-w-0 leading-tight">
               <p className="font-semibold">{invoice.customer_name || "—"}</p>
               {invoice.customer_address && <p className="text-sm text-muted-foreground whitespace-pre-line">{invoice.customer_address}</p>}

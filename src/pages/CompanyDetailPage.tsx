@@ -170,7 +170,7 @@ export function CompanyDetailPage() {
 
   return (
     <div className="space-y-6">
-      <Button asChild variant="outline" size="sm"><Link to="/"><ArrowLeft className="h-4 w-4 mr-1" /> Back to Companies</Link></Button>
+      <Button asChild variant="outline" size="sm"><Link to="/companies"><ArrowLeft className="h-4 w-4 mr-1" /> Back to Companies</Link></Button>
 
       <Card>
         <div className="h-3" style={{ background: `linear-gradient(90deg, ${form.primary_color}, ${form.accent_color})` }} />
