@@ -153,6 +153,18 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
 }
 
 // Render terms paragraphs with justified text + hanging indent for numbered/bulleted lines.
+function justifyLine(doc: jsPDF, line: string, x: number, y: number, maxW: number) {
+  const words = line.trim().split(" ");
+  if (words.length <= 1) { doc.text(line, x, y); return; }
+  const totalWordW = words.reduce((sum, w) => sum + doc.getTextWidth(w), 0);
+  const gap = (maxW - totalWordW) / (words.length - 1);
+  let cx = x;
+  for (const w of words) {
+    doc.text(w, cx, y);
+    cx += doc.getTextWidth(w) + gap;
+  }
+}
+
 function drawJustifiedTerms(doc: jsPDF, terms: string, x: number, startY: number, maxW: number): number {
   let y = startY;
   const paragraphs = terms.split(/\n/);
@@ -163,16 +175,26 @@ function drawJustifiedTerms(doc: jsPDF, terms: string, x: number, startY: number
       const marker = m[2];
       const body = m[3];
       const markerW = doc.getTextWidth(marker);
-      const lines = doc.splitTextToSize(body, maxW - markerW);
       doc.text(marker, x, y);
+      const lines = doc.splitTextToSize(body, maxW - markerW);
       for (let i = 0; i < lines.length; i++) {
-        doc.text(lines[i], x + markerW, y);
+        const isLast = i === lines.length - 1;
+        if (isLast) {
+          doc.text(lines[i], x + markerW, y);
+        } else {
+          justifyLine(doc, lines[i], x + markerW, y, maxW - markerW);
+        }
         y += 4.2;
       }
     } else {
       const lines = doc.splitTextToSize(p, maxW);
       for (let i = 0; i < lines.length; i++) {
-        doc.text(lines[i], x, y);
+        const isLast = i === lines.length - 1;
+        if (isLast) {
+          doc.text(lines[i], x, y);
+        } else {
+          justifyLine(doc, lines[i], x, y, maxW);
+        }
         y += 4.2;
       }
     }
