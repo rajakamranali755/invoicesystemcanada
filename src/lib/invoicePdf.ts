@@ -139,7 +139,8 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     doc.setTextColor(tpR, tpG, tpB); doc.setFont(nf, ns); doc.setFontSize(18);
     doc.text(c.name.toUpperCase(), 10, 18);
     doc.setFont("courier", "normal"); doc.setFontSize(8);
-    doc.text(`// ${c.address.split("\n").join(" / ")}`, 10, 26);
+    doc.text(c.address.split("\n").join(" / "), 10, 26);
+
   } else {
     // vibrant
     doc.setFillColor(pr, pg, pb); doc.rect(0, 0, W, 40, "F");
@@ -214,7 +215,7 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
 
   const leftStart = tpl === "modern" ? 56 : 14;
   const rightEnd = doc.internal.pageSize.getWidth() - 14;
-  const startY = tpl === "modern" ? 50 : 48;
+  const startY = tpl === "modern" ? 50 : 42;
   const [pr, pg, pb] = hexToRgb(c.primary_color);
   const [ar, ag, ab] = hexToRgb(c.accent_color);
   const [tpR, tpG, tpB] = contrastOn(pr, pg, pb);
@@ -236,7 +237,7 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
   doc.setTextColor(0, 0, 0);
 
   // Invoice # (left) — single line
-  const metaY = Math.max(sellerRY, startY) + 6;
+  const metaY = Math.max(sellerRY, startY) + 2;
   doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(lr, lg, lb);
   const invHashLabel = "INVOICE #  ";
   doc.text(invHashLabel, leftStart, metaY);
@@ -252,13 +253,13 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
   doc.setTextColor(0, 0, 0);
 
   // BILL TO — label · blank line · name · address (tight) · HST
-  const toY = metaY + 10;
+  const toY = metaY + 6;
   doc.setFont("helvetica", "bold"); doc.setTextColor(lr, lg, lb); doc.setFontSize(10);
   doc.text("BILL TO", leftStart, toY);
 
   // Blank line, then name
   doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "bold"); doc.setFontSize(10);
-  let nameY = toY + 7;
+  let nameY = toY + 5;
   doc.text(invoice.customer_name || "—", leftStart, nameY);
   doc.setFont("helvetica", "normal"); doc.setFontSize(9);
   let yCursor = nameY + 4;
