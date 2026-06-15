@@ -17,6 +17,7 @@ import * as XLSX from "xlsx";
 import { useRef } from "react";
 import { formatHst, isValidHst, HST_PLACEHOLDER } from "@/lib/hst";
 import { formatPhone, PHONE_PLACEHOLDER } from "@/lib/phone";
+import { fmtMoney } from "@/lib/types";
 
 const TEMPLATES = [
   { value: "classic", label: "Classic (Navy / Gold)" },
@@ -218,11 +219,12 @@ export function CompanyDetailPage() {
           <div><Label>Accent Color</Label><Input type="color" value={form.accent_color} onChange={(e) => setForm({ ...form, accent_color: e.target.value })} /></div>
           <div>
             <Label>Signature Position</Label>
-            <Select value={form.signature_position ?? "right"} onValueChange={(v) => setForm({ ...form, signature_position: v as "left" | "right" })}>
+            <Select value={form.signature_position ?? "right"} onValueChange={(v) => setForm({ ...form, signature_position: v as "left" | "right" | "none" })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="left">Bottom Left</SelectItem>
                 <SelectItem value="right">Bottom Right</SelectItem>
+                <SelectItem value="none">None (hide signature)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -302,7 +304,7 @@ export function CompanyDetailPage() {
                   <TableRow key={s.id}>
                     <TableCell className="text-xs text-muted-foreground">{s.category}</TableCell>
                     <TableCell>{s.description}</TableCell>
-                    <TableCell className="text-right">${Number(s.default_price).toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-mono">{fmtMoney(s.default_price)}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{s.notes}</TableCell>
                     <TableCell>
                       <Button size="icon" variant="ghost" onClick={() => deleteService.mutate(s.id)}>

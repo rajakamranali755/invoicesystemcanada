@@ -28,7 +28,7 @@ export interface Company {
   role: "seller" | "purchaser" | "both";
   created_at: string;
   signature_url?: string;
-  signature_position?: "left" | "right";
+  signature_position?: "left" | "right" | "none";
   website?: string;
   social_links?: string;
 }
@@ -83,5 +83,5 @@ export const COMPANY_NAME = "ABC_CANADA COMPANY";
 
 export function fmtMoney(n: number | string | null | undefined): string {
   const v = typeof n === "string" ? parseFloat(n) : (n ?? 0);
-  return `$${(v || 0).toFixed(2)}`;
+  return `$${(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }

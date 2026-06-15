@@ -35,7 +35,7 @@ const empty = {
   name: "", address: "", phone: "", email: "", tax_number: "", logo_url: "",
   primary_color: "#0f1b3d", accent_color: "#c9a84c", font_family: "helvetica",
   design_template: "classic", terms: "", role: "seller" as "seller" | "purchaser" | "both",
-  signature_url: "", signature_position: "right" as "left" | "right",
+  signature_url: "", signature_position: "right" as "left" | "right" | "none",
   website: "", social_links: "",
 };
 
@@ -180,11 +180,12 @@ export function CompaniesPage() {
             <div><Label>Accent Color</Label><Input type="color" value={form.accent_color} onChange={(e) => setForm({ ...form, accent_color: e.target.value })} /></div>
             <div>
               <Label>Signature Position</Label>
-              <Select value={form.signature_position} onValueChange={(v) => setForm({ ...form, signature_position: v as "left" | "right" })}>
+              <Select value={form.signature_position} onValueChange={(v) => setForm({ ...form, signature_position: v as "left" | "right" | "none" })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="left">Bottom Left</SelectItem>
                   <SelectItem value="right">Bottom Right</SelectItem>
+                  <SelectItem value="none">None (hide signature)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
