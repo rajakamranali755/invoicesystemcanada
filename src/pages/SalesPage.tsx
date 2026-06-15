@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Trash2, Save } from "lucide-react";
 import { toast } from "sonner";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "react-router-dom";
 import { openInvoicePdf } from "@/lib/invoicePdf";
 import { formatHst, HST_PLACEHOLDER } from "@/lib/hst";
 import { formatPhone, PHONE_PLACEHOLDER } from "@/lib/phone";

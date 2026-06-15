@@ -5,7 +5,7 @@ import type { Invoice, InvoiceItem, Company } from "@/lib/types";
 import { fmtMoney } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Link } from "@tanstack/react-router";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Eye, FileText } from "lucide-react";
 import { openInvoicePdf } from "@/lib/invoicePdf";

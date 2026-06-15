@@ -1,17 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Route } from "@/routes/_app.invoices.$id";
 import type { Invoice, InvoiceItem, Company } from "@/lib/types";
 import { fmtMoney } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Printer, Download, ArrowLeft } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { Link } from "react-router-dom";
 import { downloadInvoicePdf } from "@/lib/invoicePdf";
+import { useParams } from "react-router-dom";
 
 export function InvoiceDetailPage() {
-  const { id } = Route.useParams();
-
+  const { id } = useParams<{ id: string }>();
+  const invoiceId = id!;
   const { data, isLoading } = useQuery({
     queryKey: ["invoice", id],
     queryFn: async () => {

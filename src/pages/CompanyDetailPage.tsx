@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Route } from "@/routes/_app.companies.$id";
 import type { Company, CompanyService } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,13 +10,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Trash2, Save, ArrowLeft, Upload, Download } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { useRef } from "react";
 import { formatHst, isValidHst, HST_PLACEHOLDER } from "@/lib/hst";
 import { formatPhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { fmtMoney } from "@/lib/types";
+import { useParams } from "react-router-dom";
 
 const TEMPLATES = [
   { value: "classic", label: "Classic (Navy / Gold)" },
@@ -41,7 +41,8 @@ const ROLES = [
 ];
 
 export function CompanyDetailPage() {
-  const { id } = Route.useParams();
+  const { id } = useParams<{ id: string }>();
+  const companyId = id!;
   const qc = useQueryClient();
   const [form, setForm] = useState<Company | null>(null);
   const [newSvc, setNewSvc] = useState({ category: "", description: "", default_price: 0, notes: "" });
