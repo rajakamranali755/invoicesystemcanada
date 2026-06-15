@@ -99,14 +99,15 @@ export function InvoiceDetailPage() {
           </div>
         </div>
 
-        {/* Bill To — left: name/address/HST · right: contact/email/website/social */}
+        {/* Bill To — label · blank line · name · address (tight) · HST | right: contact/email */}
         <div className="mb-6">
-          <p className="text-xs uppercase mb-1" style={{ color: label }}>Bill To</p>
+          <p className="text-xs uppercase font-bold" style={{ color: label }}>Bill To</p>
+          <div className="h-3" />
           <div className="flex justify-between items-start gap-6">
-            <div className="min-w-0">
+            <div className="min-w-0 leading-tight">
               <p className="font-semibold">{invoice.customer_name || "—"}</p>
               {invoice.customer_address && <p className="text-sm text-muted-foreground whitespace-pre-line">{invoice.customer_address}</p>}
-              {invoice.customer_tax_number && <p className="text-xs text-muted-foreground">HST: {invoice.customer_tax_number}</p>}
+              {invoice.customer_tax_number && <p className="text-xs text-muted-foreground mt-0.5">HST: {invoice.customer_tax_number}</p>}
             </div>
             <div className="text-right text-sm text-muted-foreground min-w-0">
               {invoice.customer_contact && <p>{invoice.customer_contact}</p>}
@@ -114,14 +115,6 @@ export function InvoiceDetailPage() {
             </div>
           </div>
         </div>
-
-        {/* Issuer contact details — parallel to company name block (right side under header is already shown above) */}
-        {(company?.website || company?.social_links) && (
-          <div className="mb-6 text-right text-xs text-muted-foreground whitespace-pre-line">
-            {company?.website && <p>{company.website}</p>}
-            {company?.social_links && <p>{company.social_links}</p>}
-          </div>
-        )}
 
         <table className="w-full text-sm">
           <thead style={{ background: primary, color: onPrimary }}>
@@ -144,18 +137,18 @@ export function InvoiceDetailPage() {
           </tbody>
         </table>
 
-        <div className="mt-6 flex justify-end">
-          <div className="w-72 space-y-1 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{fmtMoney(invoice.total_subtotal)}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">HST (13%)</span><span>{fmtMoney(invoice.total_gst)}</span></div>
-            <div className="flex justify-between pt-2 text-lg font-bold px-2 rounded" style={{ background: primary, color: onPrimary }}><span>Total Due</span><span>{fmtMoney(invoice.grand_total)}</span></div>
-            {invoice.amount_paid > 0 && (
-              <>
-                <div className="flex justify-between pt-1"><span className="text-muted-foreground">Paid</span><span>{fmtMoney(invoice.amount_paid)}</span></div>
-                <div className="flex justify-between font-semibold" style={{ color: accent }}><span>Balance</span><span>{fmtMoney(balance)}</span></div>
-              </>
-            )}
+        <div className="mt-6 text-right text-sm space-y-1">
+          <div><span className="text-muted-foreground mr-3">Subtotal:</span><span className="inline-block min-w-[100px] font-mono">{fmtMoney(invoice.total_subtotal)}</span></div>
+          <div><span className="text-muted-foreground mr-3">HST (13%):</span><span className="inline-block min-w-[100px] font-mono">{fmtMoney(invoice.total_gst)}</span></div>
+          <div className="inline-block mt-2 px-3 py-1 rounded text-lg font-bold" style={{ background: primary, color: onPrimary }}>
+            <span className="mr-3">Total Due:</span><span className="font-mono">{fmtMoney(invoice.grand_total)}</span>
           </div>
+          {invoice.amount_paid > 0 && (
+            <>
+              <div className="pt-1"><span className="text-muted-foreground mr-3">Paid:</span><span className="inline-block min-w-[100px] font-mono">{fmtMoney(invoice.amount_paid)}</span></div>
+              <div className="font-semibold" style={{ color: accent }}><span className="mr-3">Balance:</span><span className="inline-block min-w-[100px] font-mono">{fmtMoney(balance)}</span></div>
+            </>
+          )}
         </div>
 
         {invoice.notes && (
@@ -168,20 +161,35 @@ export function InvoiceDetailPage() {
         {company?.terms && (
           <div className="mt-8">
             <p className="text-xs uppercase mb-1" style={{ color: label }}>Terms & Conditions</p>
-            <p className="text-xs whitespace-pre-line text-muted-foreground">{company.terms}</p>
+            <div className="text-xs text-muted-foreground space-y-1 text-justify">
+              {company.terms.split(/\n/).map((line, i) => {
+                const m = line.match(/^(\s*)((?:\d+[.)]|[-*•·])\s+)(.*)$/);
+                if (m) {
+                  return (
+                    <div key={i} className="flex gap-1">
+                      <span className="shrink-0">{m[2]}</span>
+                      <span className="flex-1">{m[3]}</span>
+                    </div>
+                  );
+                }
+                return <p key={i}>{line || "\u00A0"}</p>;
+              })}
+            </div>
           </div>
         )}
 
-        <div className={"mt-16 flex " + (company?.signature_position === "left" ? "justify-start" : "justify-end")}>
-          <div className="w-64 text-sm">
-            {company?.signature_url && (
-              <img src={company.signature_url} alt="Signature" className="h-16 object-contain mb-1" />
-            )}
-            <div className="border-t pt-2 text-muted-foreground" style={{ borderColor: accent }}>
-              Authorized Signature — {company?.name}
+        {company?.signature_position !== "none" && (
+          <div className={"mt-16 flex " + (company?.signature_position === "left" ? "justify-start" : "justify-end")}>
+            <div className="w-64 text-sm">
+              {company?.signature_url && (
+                <img src={company.signature_url} alt="Signature" className="h-16 object-contain mb-1" />
+              )}
+              <div className="border-t pt-2 text-muted-foreground" style={{ borderColor: accent }}>
+                Authorized Signature — {company?.name}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </Card>
     </div>
   );
