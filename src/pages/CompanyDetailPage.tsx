@@ -218,11 +218,12 @@ export function CompanyDetailPage() {
           <div><Label>Accent Color</Label><Input type="color" value={form.accent_color} onChange={(e) => setForm({ ...form, accent_color: e.target.value })} /></div>
           <div>
             <Label>Signature Position</Label>
-            <Select value={form.signature_position ?? "right"} onValueChange={(v) => setForm({ ...form, signature_position: v as "left" | "right" })}>
+            <Select value={form.signature_position ?? "right"} onValueChange={(v) => setForm({ ...form, signature_position: v as "left" | "right" | "none" })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="left">Bottom Left</SelectItem>
                 <SelectItem value="right">Bottom Right</SelectItem>
+                <SelectItem value="none">None (hide signature)</SelectItem>
               </SelectContent>
             </Select>
           </div>
