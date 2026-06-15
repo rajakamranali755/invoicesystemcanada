@@ -28,7 +28,7 @@ export interface Company {
   role: "seller" | "purchaser" | "both";
   created_at: string;
   signature_url?: string;
-  signature_position?: "left" | "right";
+  signature_position?: "left" | "right" | "none";
   website?: string;
   social_links?: string;
 }
