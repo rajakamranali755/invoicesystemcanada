@@ -226,14 +226,23 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
   // Align seller contact to the company name Y inside the header (~18 for most templates)
   const contactStartY = tpl === "modern" ? 20 : tpl === "elegant" ? 22 : tpl === "bold" ? 18 : tpl === "corporate" ? 10 : tpl === "classic" ? 14 : tpl === "executive" ? 22 : tpl === "monochrome" ? 18 : tpl === "gradient" ? 18 : tpl === "geometric" ? 18 : tpl === "industrial" ? 14 : tpl === "minimal" ? 14 : 18;
   let sellerRY = contactStartY;
-  if (c.phone) { doc.text(c.phone, rightEnd, sellerRY, { align: "right" }); sellerRY += 4; }
-  if (c.email) { doc.text(c.email, rightEnd, sellerRY, { align: "right" }); sellerRY += 4; }
-  if (c.tax_number) { doc.text(`HST: ${c.tax_number}`, rightEnd, sellerRY, { align: "right" }); sellerRY += 4; }
-  if (c.website) { doc.text(c.website, rightEnd, sellerRY, { align: "right" }); sellerRY += 4; }
+  const sellerLabelX = rightEnd - Math.max(
+  c.phone ? doc.getTextWidth(`Phone:  ${c.phone}`) : 0,
+  c.email ? doc.getTextWidth(`Email:  ${c.email}`) : 0,
+  c.tax_number ? doc.getTextWidth(`HST:  ${c.tax_number}`) : 0,
+  c.website ? doc.getTextWidth(`Web:  ${c.website}`) : 0,
+  c.social_links ? doc.getTextWidth(`Social:  ${c.social_links}`) : 0,
+);
+  if (c.phone) { doc.text(`Phone:`, sellerLabelX, sellerRY); doc.text(c.phone, rightEnd, sellerRY, { align: "right" }); sellerRY += 4; }
+  if (c.email) { doc.text(`Email:`, sellerLabelX, sellerRY); doc.text(c.email, rightEnd, sellerRY, { align: "right" }); sellerRY += 4; }
+  if (c.tax_number) { doc.text(`HST:`, sellerLabelX, sellerRY); doc.text(c.tax_number, rightEnd, sellerRY, { align: "right" }); sellerRY += 4; }
+  if (c.website) { doc.text(`Web:`, sellerLabelX, sellerRY); doc.text(c.website, rightEnd, sellerRY, { align: "right" }); sellerRY += 4; }
   if (c.social_links) {
-    const sLines = doc.splitTextToSize(c.social_links, 80);
-    doc.text(sLines, rightEnd, sellerRY, { align: "right" }); sellerRY += sLines.length * 4;
-  }
+  const sLines = doc.splitTextToSize(c.social_links, 80);
+  doc.text(`Social:`, sellerLabelX, sellerRY);
+  doc.text(sLines, rightEnd, sellerRY, { align: "right" });
+  sellerRY += sLines.length * 4;
+}
   doc.setTextColor(0, 0, 0);
 
   // Invoice # (left) — single line
@@ -270,8 +279,9 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
   if (invoice.customer_tax_number) { doc.text(`HST: ${invoice.customer_tax_number}`, leftStart, yCursor); yCursor += 4; }
   // Right column (parallel) — contact & email
   let rCursor = nameY;
-  if (invoice.customer_contact) { doc.text(invoice.customer_contact, rightEnd, rCursor, { align: "right" }); rCursor += 4; }
-  if (invoice.customer_email) { doc.text(invoice.customer_email, rightEnd, rCursor, { align: "right" }); rCursor += 4; }
+  const labelX = rightEnd - Math.max(doc.getTextWidth(`HST:  ${invoice.customer_contact || ""}`), doc.getTextWidth(`Email:  ${invoice.customer_email || ""}`));
+  if (invoice.customer_contact) { doc.text(`HST:`, labelX, rCursor); doc.text(invoice.customer_contact, rightEnd, rCursor, { align: "right" }); rCursor += 4; }
+  if (invoice.customer_email) { doc.text(`Email:`, labelX, rCursor); doc.text(invoice.customer_email, rightEnd, rCursor, { align: "right" }); rCursor += 4; }
   yCursor = Math.max(yCursor, rCursor);
 
   autoTable(doc, {
