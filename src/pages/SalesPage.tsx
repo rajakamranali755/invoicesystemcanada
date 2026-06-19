@@ -53,6 +53,8 @@ export function SalesPage() {
   const [customerTaxNumber, setCustomerTaxNumber] = useState("");
   const [notes, setNotes] = useState("");
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().slice(0, 10));
+  const [invoiceNumber, setInvoiceNumber] = useState("");
+  const [numberLoading, setNumberLoading] = useState(true);
 
   const { data: companies = [] } = useQuery({
     queryKey: ["companies"],
@@ -89,6 +91,20 @@ export function SalesPage() {
 
   useEffect(() => { setRows([newRow()]); }, [companyId]);
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data, error } = await supabase.rpc("generate_invoice_number");
+        if (error) throw error;
+        setInvoiceNumber(data as unknown as string);
+      } catch (e) {
+        console.error("Failed to auto-generate invoice number", e);
+      } finally {
+        setNumberLoading(false);
+      }
+    })();
+  }, []); 
+
   const updateRow = (key: string, patch: Partial<Row>) =>
     setRows((rs) => rs.map((r) => (r.key === key ? { ...r, ...patch } : r)));
 
@@ -118,14 +134,12 @@ export function SalesPage() {
   const save = useMutation({
     mutationFn: async () => {
       if (!companyId) throw new Error("Select a company.");
+      if (!invoiceNumber.trim()) throw new Error("Invoice number is required.");
       const validRows = rows.filter((r) => r.item_name && r.quantity > 0);
       if (validRows.length === 0) throw new Error("Add at least one item.");
-      const { data: numRow, error: nErr } = await supabase.rpc("generate_invoice_number");
-      if (nErr) throw nErr;
-      const invoice_number = numRow as unknown as string;
 
       const { data: inv, error: iErr } = await supabase.from("invoices").insert({
-        invoice_number,
+        invoice_number: invoiceNumber.trim(),
         company_id: companyId,
         customer_name: companies.find((c) => c.id === customerCompanyId)?.name || "",
         customer_contact: customerContact,
@@ -201,6 +215,15 @@ export function SalesPage() {
             )}
           </div>
           <div className="md:col-span-2"><Label>Date</Label><Input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} /></div>
+          <div className="md:col-span-2">
+            <Label>Invoice #</Label>
+            <Input
+              value={invoiceNumber}
+              placeholder={numberLoading ? "Generating..." : "Invoice number"}
+              onChange={(e) => setInvoiceNumber(e.target.value)}
+            />
+            <p className="text-[10px] text-muted-foreground mt-1">Auto-generated — you can edit it before saving.</p>
+          </div>
           <div className="md:col-span-2">
             <Label>Customer Company — TO (Purchaser)</Label>
             <Select value={customerCompanyId} onValueChange={onPickPurchaser}>
@@ -305,7 +328,8 @@ export function SalesPage() {
             </div>
           </div>
           <div className="mt-6 flex justify-end">
-            <Button size="lg" onClick={() => save.mutate()} disabled={save.isPending}>
+                        <Button size="lg" onClick={() => save.mutate()} disabled={save.isPending || numberLoading}>
+
               <Save className="h-4 w-4 mr-2" />
               {save.isPending ? "Saving..." : "Save Invoice"}
             </Button>
