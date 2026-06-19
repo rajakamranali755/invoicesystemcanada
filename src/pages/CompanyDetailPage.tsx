@@ -32,6 +32,16 @@ const TEMPLATES = [
   { value: "geometric", label: "Geometric (Circle + Block)" },
   { value: "executive", label: "Executive (Serif / Double Rule)" },
   { value: "industrial", label: "Industrial (Blueprint / Mono)" },
+  { value: "ribbon", label: "Ribbon (Side Tab + Stamp)" },
+  { value: "ledger", label: "Ledger (Accounting Grid)" },
+  { value: "boxed", label: "Boxed (Full Border Frame)" },
+  { value: "diagonal", label: "Diagonal (Slashed Banner)" },
+  { value: "stacked", label: "Stacked (Centered Stamp Seal)" },
+  { value: "summary-strip", label: "Summary Strip (Highlight Bar)" },
+  { value: "corporate-blue", label: "Corporate Blue (Zebra Table)" },
+  { value: "banner-green", label: "Banner Green (Full Top Banner)" },
+  { value: "template-a", label: "Template A (Project / No Logo)" },
+
 ];
 
 const ROLES = [
