@@ -216,15 +216,6 @@ export function SalesPage() {
           </div>
           <div className="md:col-span-2"><Label>Date</Label><Input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} /></div>
           <div className="md:col-span-2">
-            <Label>Invoice #</Label>
-            <Input
-              value={invoiceNumber}
-              placeholder={numberLoading ? "Generating..." : "Invoice number"}
-              onChange={(e) => setInvoiceNumber(e.target.value)}
-            />
-            <p className="text-[10px] text-muted-foreground mt-1">Auto-generated — you can edit it before saving.</p>
-          </div>
-          <div className="md:col-span-2">
             <Label>Customer Company — TO (Purchaser)</Label>
             <Select value={customerCompanyId} onValueChange={onPickPurchaser}>
               <SelectTrigger><SelectValue placeholder="Select purchaser company (auto-fills details)" /></SelectTrigger>
@@ -255,8 +246,17 @@ export function SalesPage() {
             />
             <p className="text-[10px] text-muted-foreground mt-1">9 digits, format 12345 6789.</p>
           </div>
-          <div className="md:col-span-4"><Label>Notes / Remarks</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
-        </CardContent>
+        <div className="md:col-span-4"><Label>Notes / Remarks</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
+          <div className="md:col-span-2">
+            <Label>Invoice #</Label>
+            <Input
+              value={invoiceNumber}
+              placeholder={numberLoading ? "Generating..." : "Invoice number"}
+              onChange={(e) => setInvoiceNumber(e.target.value)}
+            />
+            <p className="text-[10px] text-muted-foreground mt-1">Auto-generated — you can edit it before saving.</p>
+          </div>
+           </CardContent>
       </Card>
 
       <Card>
