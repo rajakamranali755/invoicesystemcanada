@@ -75,7 +75,7 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     doc.setTextColor(tpR, tpG, tpB); doc.setFont(nf, ns); doc.setFontSize(22);
     doc.text(c.name.toUpperCase(), 14, 18);
     doc.setFontSize(9); doc.setFont("helvetica", "normal");
-    doc.text(c.address.split("\n").join(" · "), 14, 26);
+    doc.text(c.address.split("\n").join(", "), 14, 26);
   } else if (tpl === "modern") {
     doc.setFillColor(pr, pg, pb); doc.rect(0, 0, 50, doc.internal.pageSize.getHeight(), "F");
     doc.setTextColor(tpR, tpG, tpB); doc.setFont(nf, ns); doc.setFontSize(15);
@@ -90,7 +90,8 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     doc.text(elegantNameLines, 14, 24, { align: "left" });
     const elegantAddrY = 24 + elegantNameLines.length * 7;
     doc.setFont("times", "italic"); doc.setFontSize(10); doc.setTextColor(80, 80, 80);
-    doc.text(c.address.split("\n").join(" · "), 14, elegantAddrY, { align: "left", maxWidth: (W / 2) - 10 });
+    doc.text(c.address.split("\n").join(", "), 14, elegantAddrY, { align: "left", maxWidth: (W / 2) - 10 });
+
     const elegantBottomLine = elegantAddrY + 8;
     doc.setDrawColor(pr, pg, pb); doc.line(14, elegantBottomLine, W - 14, elegantBottomLine);
   } else if (tpl === "bold") {
@@ -99,12 +100,13 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     doc.setTextColor(tpR, tpG, tpB); doc.setFont(nf, ns); doc.setFontSize(28);
     doc.text(c.name.toUpperCase(), 14, 24);
     doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-    doc.text(c.address.split("\n").join("  ·  "), 14, 36);
+    doc.text(c.address.split("\n").join(", "), 14, 36);
+
   } else if (tpl === "minimal") {
     doc.setTextColor(...readable(pr, pg, pb)); doc.setFont(nf, ns); doc.setFontSize(14);
     doc.text(c.name.toUpperCase(), 14, 18);
     doc.setTextColor(120, 120, 120); doc.setFont("helvetica", "normal"); doc.setFontSize(8);
-    doc.text(c.address.split("\n").join(" / "), 14, 25);
+    doc.text(c.address.split("\n").join(",  "), 14, 25);
     doc.setDrawColor(pr, pg, pb); doc.setLineWidth(0.2);
     doc.line(14, 32, W - 14, 32);
   } else if (tpl === "corporate") {
@@ -121,7 +123,7 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     doc.setTextColor(255, 255, 255); doc.setFont(nf, ns); doc.setFontSize(20);
     doc.text(c.name.toUpperCase(), 14, 22);
     doc.setFont("helvetica", "normal"); doc.setFontSize(8);
-    doc.text(c.address.split("\n").join("  ·  "), 14, 30);
+    doc.text(c.address.split("\n").join(",    "), 14, 30);
   } else if (tpl === "gradient") {
     for (let i = 0; i < 40; i++) {
       const t = i / 39;
@@ -133,7 +135,7 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     doc.setTextColor(tpR, tpG, tpB); doc.setFont(nf, ns); doc.setFontSize(26);
     doc.text(c.name, 14, 22);
     doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-    doc.text(c.address.split("\n").join(" · "), 14, 32);
+    doc.text(c.address.split("\n").join(",  "), 14, 32);
   } else if (tpl === "geometric") {
     doc.setFillColor(pr, pg, pb); doc.circle(20, 22, 14, "F");
     doc.setFillColor(ar, ag, ab); doc.rect(W - 60, 8, 46, 28, "F");
@@ -142,7 +144,7 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     doc.setTextColor(0, 0, 0); doc.setFont(nf, ns); doc.setFontSize(18);
     doc.text(c.name.toUpperCase(), 40, 18);
     doc.setFont("helvetica", "normal"); doc.setFontSize(8);
-    doc.text(c.address.split("\n").join(" · "), 40, 27);
+    doc.text(c.address.split("\n").join(", "), 40, 27);
     doc.setDrawColor(pr, pg, pb); doc.setLineWidth(0.4); doc.line(0, 40, W, 40);
   } else if (tpl === "executive") {
     doc.setDrawColor(pr, pg, pb); doc.setLineWidth(1.2); doc.line(14, 12, W - 14, 12);
@@ -150,7 +152,7 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     doc.setTextColor(...readable(pr, pg, pb)); doc.setFont(nf, ns); doc.setFontSize(22);
     doc.text(c.name, 14, 26);
     doc.setFont("times", "italic"); doc.setFontSize(9); doc.setTextColor(80, 80, 80);
-    doc.text(c.address.split("\n").join(" · "), 14, 33);
+    doc.text(c.address.split("\n").join(", "), 14, 33);
     doc.setDrawColor(pr, pg, pb); doc.setLineWidth(0.6); doc.line(14, 41, W - 14, 41);
   } else if (tpl === "industrial") {
     doc.setFillColor(pr, pg, pb); doc.rect(0, 0, W, 36, "F");
@@ -159,7 +161,7 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     doc.setTextColor(tpR, tpG, tpB); doc.setFont(nf, ns); doc.setFontSize(18);
     doc.text(c.name.toUpperCase(), 10, 18);
     doc.setFont("courier", "normal"); doc.setFontSize(8);
-    doc.text(c.address.split("\n").join(" / "), 10, 26);
+    doc.text(c.address.split("\n").join(",  "), 10, 26);
 
   } else if (tpl === "ribbon") {
     doc.setFillColor(pr, pg, pb); doc.rect(0, 0, 16, 50, "F");
@@ -167,14 +169,16 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     doc.setTextColor(tpR, tpG, tpB); doc.setFont(nf, ns); doc.setFontSize(20);
     doc.text(c.name, 24, 18, { maxWidth: W - 80 });
     doc.setTextColor(80, 80, 80); doc.setFont("helvetica", "normal"); doc.setFontSize(8);
-    doc.text(c.address.split("\n").join(" · "), 24, 26, { maxWidth: W - 80 });
+    doc.text(c.address.split("\n").join(", "), 24, 26, { maxWidth: W - 80 });
+
     
   } else if (tpl === "ledger") {
     doc.setFillColor(pr, pg, pb); doc.rect(0, 0, W, 2, "F");
     doc.setTextColor(...readable(pr, pg, pb)); doc.setFont(nf, ns); doc.setFontSize(18);
     doc.text(c.name.toUpperCase(), 14, 20);
     doc.setTextColor(90, 90, 90); doc.setFont("courier", "normal"); doc.setFontSize(8);
-    doc.text(c.address.split("\n").join("  |  "), 14, 28);
+    doc.text(c.address.split("\n").join(", "), 14, 28);
+
     doc.setDrawColor(pr, pg, pb); doc.setLineWidth(0.25); doc.line(0, 38, W, 38);
   }else if (tpl === "boxed") {
     doc.setDrawColor(pr, pg, pb); doc.setLineWidth(0.8);
@@ -183,7 +187,8 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     doc.setTextColor(...readable(pr, pg, pb)); doc.setFont(nf, ns); doc.setFontSize(18);
     doc.text(c.name, W / 2, 17, { align: "center" });
     doc.setTextColor(100, 100, 100); doc.setFont("helvetica", "normal"); doc.setFontSize(8);
-    doc.text(c.address.split("\n").join(" · "), W / 2, 30, { align: "center" });
+    doc.text(c.address.split("\n").join(", "), W / 2, 30, { align: "center" });
+
   } else if (tpl === "diagonal") {
     doc.setFillColor(pr, pg, pb);
     doc.triangle(0, 0, W, 0, 0, 38, "F");
@@ -192,7 +197,8 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     doc.setTextColor(tpR, tpG, tpB); doc.setFont(nf, ns); doc.setFontSize(20);
     doc.text(c.name.toUpperCase(), 14, 16);
     doc.setFont("helvetica", "normal"); doc.setFontSize(8);
-    doc.text(c.address.split("\n").join(" · "), 14, 24);
+    doc.text(c.address.split("\n").join(", "), 14, 24);
+
   } else if (tpl === "stacked") {
     // doc.setFillColor(pr, pg, pb); doc.circle(W / 2, 14, 9, "F");
     doc.setTextColor(tpR, tpG, tpB); doc.setFont("helvetica", "bold"); doc.setFontSize(8);
@@ -200,7 +206,8 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     doc.setTextColor(...readable(pr, pg, pb)); doc.setFont(nf, ns); doc.setFontSize(17);
     doc.text(c.name, W / 2, 32, { align: "center" });
     doc.setTextColor(120, 120, 120); doc.setFont("helvetica", "normal"); doc.setFontSize(8);
-    doc.text(c.address.split("\n").join(" · "), W / 2, 39, { align: "center" });
+    doc.text(c.address.split("\n").join(", "), W / 2, 39, { align: "center" });
+
     doc.setDrawColor(ar, ag, ab); doc.setLineWidth(0.4); doc.line(40, 43, W - 40, 43);
   } else if (tpl === "summary-strip") {
     doc.setFillColor(ar, ag, ab); doc.rect(14, 6, 30, 2, "F");
@@ -229,7 +236,7 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     doc.setTextColor(tpR, tpG, tpB); doc.setFont(nf, ns); doc.setFontSize(24);
     doc.text(c.name, 14, 20);
     doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-    doc.text(c.address.split("\n").join(" · "), 14, 30);
+    doc.text(c.address.split("\n").join(",  "), 14, 30);
   }
   doc.setTextColor(0, 0, 0);
 }
@@ -723,7 +730,9 @@ doc.setTextColor(0, 0, 0);
   return addrY + 8;
 })();
 const metaY = tpl === "elegant"
-  ? Math.max(sellerRY, elegantBottomLineY) + 4
+  ? Math.max(sellerRY, elegantBottomLineY) + 8
+  : tpl === "gradient" || tpl === "vibrant"
+  ? Math.max(sellerRY, startY) + 8
   : Math.max(sellerRY, startY) + 2;
   doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(lr, lg, lb);
   const invHashLabel = "INVOICE #  ";
