@@ -55,6 +55,7 @@ export function SalesPage() {
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().slice(0, 10));
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [numberLoading, setNumberLoading] = useState(true);
+  const [editableInvoiceNo, setEditableInvoiceNo] = useState(false);
 
   const { data: companies = [] } = useQuery({
     queryKey: ["companies"],
@@ -133,13 +134,23 @@ export function SalesPage() {
 
   const save = useMutation({
     mutationFn: async () => {
-      if (!companyId) throw new Error("Select a company.");
-      if (!invoiceNumber.trim()) throw new Error("Invoice number is required.");
-      const validRows = rows.filter((r) => r.item_name && r.quantity > 0);
-      if (validRows.length === 0) throw new Error("Add at least one item.");
+     if (!companyId) throw new Error("Select a company.");
+    const validRows = rows.filter((r) => r.item_name && r.quantity > 0);
+    if (validRows.length === 0) throw new Error("Add at least one item.");
+
+    let finalInvoiceNumber: string;
+    if (editableInvoiceNo) {
+    if (!invoiceNumber.trim()) throw new Error("Invoice number is required.");
+    finalInvoiceNumber = invoiceNumber.trim();
+    } else {
+    const { data, error: nErr } = await supabase.rpc("generate_invoice_number");
+    if (nErr) throw nErr;
+    finalInvoiceNumber = data as unknown as string;
+    }
 
       const { data: inv, error: iErr } = await supabase.from("invoices").insert({
-        invoice_number: invoiceNumber.trim(),
+        invoice_number: finalInvoiceNumber,
+
         company_id: companyId,
         customer_name: companies.find((c) => c.id === customerCompanyId)?.name || "",
         customer_contact: customerContact,
@@ -248,14 +259,26 @@ export function SalesPage() {
           </div>
         <div className="md:col-span-4"><Label>Notes / Remarks</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
           <div className="md:col-span-2">
-            <Label>Invoice #</Label>
-            <Input
-              value={invoiceNumber}
-              placeholder={numberLoading ? "Generating..." : "Invoice number"}
-              onChange={(e) => setInvoiceNumber(e.target.value)}
-            />
-            <p className="text-[10px] text-muted-foreground mt-1">Auto-generated — you can edit it before saving.</p>
-          </div>
+  <div className="flex items-center gap-2 mb-1">
+    <input
+      type="checkbox"
+      id="editableInvoiceNo"
+      checked={editableInvoiceNo}
+      onChange={(e) => setEditableInvoiceNo(e.target.checked)}
+    />
+    <Label htmlFor="editableInvoiceNo" className="cursor-pointer">Need editable invoice #</Label>
+  </div>
+  {editableInvoiceNo && (
+    <>
+      <Input
+        value={invoiceNumber}
+        placeholder={numberLoading ? "Generating..." : "Invoice number"}
+        onChange={(e) => setInvoiceNumber(e.target.value)}
+      />
+      <p className="text-[10px] text-muted-foreground mt-1">Auto-generated — you can edit it before saving.</p>
+    </>
+  )}
+</div>
            </CardContent>
       </Card>
 
