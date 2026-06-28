@@ -114,7 +114,7 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     doc.text(c.name, 14, 14);
     const [taR, taG, taB] = contrastOn(ar, ag, ab);
     doc.setTextColor(taR, taG, taB); doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-    doc.text(c.address.split("\n").join(" · "), 14, 30);
+    doc.text(c.address.split("\n").join(", "), 14, 30);
   } else if (tpl === "monochrome") {
     doc.setFillColor(0, 0, 0); doc.rect(0, 0, W, 40, "F");
     doc.setFillColor(ar, ag, ab); doc.rect(0, 40, W, 1.2, "F");
@@ -168,8 +168,7 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     doc.text(c.name, 24, 18, { maxWidth: W - 80 });
     doc.setTextColor(80, 80, 80); doc.setFont("helvetica", "normal"); doc.setFontSize(8);
     doc.text(c.address.split("\n").join(" · "), 24, 26, { maxWidth: W - 80 });
-    doc.setDrawColor(ar, ag, ab); doc.setLineWidth(1);
-    doc.circle(W - 26, 18, 12, "S");
+    
   } else if (tpl === "ledger") {
     doc.setFillColor(pr, pg, pb); doc.rect(0, 0, W, 2, "F");
     doc.setTextColor(...readable(pr, pg, pb)); doc.setFont(nf, ns); doc.setFontSize(18);
