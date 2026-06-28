@@ -84,11 +84,15 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     doc.text(c.address, 6, 40, { maxWidth: 40 });
   } else if (tpl === "elegant") {
     doc.setDrawColor(pr, pg, pb); doc.setLineWidth(0.5);
-    doc.line(14, 14, W - 14, 14); doc.line(14, 40, W - 14, 40);
-    doc.setTextColor(...readable(pr, pg, pb)); doc.setFont(nf, ns); doc.setFontSize(24);
-    doc.text(c.name, W / 2, 26, { align: "center" });
+    doc.line(14, 14, W - 14, 14);
+    doc.setTextColor(...readable(pr, pg, pb)); doc.setFont(nf, ns); doc.setFontSize(16);
+    const elegantNameLines = doc.splitTextToSize(c.name, (W / 2) - 10);
+    doc.text(elegantNameLines, 14, 24, { align: "left" });
+    const elegantAddrY = 24 + elegantNameLines.length * 7;
     doc.setFont("times", "italic"); doc.setFontSize(10); doc.setTextColor(80, 80, 80);
-    doc.text(c.address.split("\n").join(" · "), W / 2, 34, { align: "center" });
+    doc.text(c.address.split("\n").join(" · "), 14, elegantAddrY, { align: "left", maxWidth: (W / 2) - 10 });
+    const elegantBottomLine = elegantAddrY + 8;
+    doc.setDrawColor(pr, pg, pb); doc.line(14, elegantBottomLine, W - 14, elegantBottomLine);
   } else if (tpl === "bold") {
     doc.setFillColor(pr, pg, pb); doc.rect(0, 0, W, 44, "F");
     doc.setFillColor(ar, ag, ab); doc.rect(0, 44, W, 6, "F");
@@ -668,38 +672,60 @@ if (tpl === "summary-strip" || tpl === "corporate-blue" || tpl === "banner-green
 
   const leftStart = tpl === "modern" ? 56 : 14;
   const rightEnd = doc.internal.pageSize.getWidth() - 14;
-  const startY = tpl === "modern" ? 50 : 42;
+const startY = tpl === "modern" ? 50 : tpl === "elegant" ? 0 : 42;
   const [pr, pg, pb] = hexToRgb(c.primary_color);
   const [ar, ag, ab] = hexToRgb(c.accent_color);
   const [tpR, tpG, tpB] = contrastOn(pr, pg, pb);
   const [lr, lg, lb] = readable(pr, pg, pb);
 
   // Seller contact details — right-aligned, parallel to seller name in header
-  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(80, 80, 80);
-  // Align seller contact to the company name Y inside the header (~18 for most templates)
-  const contactStartY = tpl === "modern" ? 20 : tpl === "elegant" ? 22 : tpl === "bold" ? 18 : tpl === "corporate" ? 10 : tpl === "classic" ? 14 : tpl === "executive" ? 22 : tpl === "monochrome" ? 18 : tpl === "gradient" ? 18 : tpl === "geometric" ? 18 : tpl === "industrial" ? 14 : tpl === "minimal" ? 14 : 18;
-  let sellerRY = contactStartY;
-  const sellerLabelX = rightEnd - Math.max(
-  c.phone ? doc.getTextWidth(`Phone:  ${c.phone}`) : 0,
-  c.email ? doc.getTextWidth(`Email:  ${c.email}`) : 0,
-  c.tax_number ? doc.getTextWidth(`HST:  ${c.tax_number}`) : 0,
-  c.website ? doc.getTextWidth(`Web:  ${c.website}`) : 0,
-  c.social_links ? doc.getTextWidth(`Social:  ${c.social_links}`) : 0,
-);
-  if (c.phone) { doc.text(`Phone:`, sellerLabelX, sellerRY); doc.text(c.phone, rightEnd, sellerRY, { align: "right" }); sellerRY += 4; }
-  if (c.email) { doc.text(`Email:`, sellerLabelX, sellerRY); doc.text(c.email, rightEnd, sellerRY, { align: "right" }); sellerRY += 4; }
-  if (c.tax_number) { doc.text(`HST:`, sellerLabelX, sellerRY); doc.text(c.tax_number, rightEnd, sellerRY, { align: "right" }); sellerRY += 4; }
-  if (c.website) { doc.text(`Web:`, sellerLabelX, sellerRY); doc.text(c.website, rightEnd, sellerRY, { align: "right" }); sellerRY += 4; }
-  if (c.social_links) {
-  const sLines = doc.splitTextToSize(c.social_links, 80);
-  doc.text(`Social:`, sellerLabelX, sellerRY);
-  doc.text(sLines, rightEnd, sellerRY, { align: "right" });
-  sellerRY += sLines.length * 4;
-}
-  doc.setTextColor(0, 0, 0);
+  // NEW
+// NEW
+// NEW (renamed)
+const darkHeaderTpls = ["classic", "bold", "corporate", "monochrome", "gradient", "industrial", "vibrant"];
+const sellerTextColor: [number, number, number] = darkHeaderTpls.includes(tpl) ? [tpR, tpG, tpB] : [80, 80, 80];
+doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...sellerTextColor);
+const contactStartY = tpl === "modern" ? 20 : tpl === "elegant" ? 22 : tpl === "bold" ? 18 : tpl === "corporate" ? 10 : tpl === "classic" ? 14 : tpl === "executive" ? 22 : tpl === "monochrome" ? 18 : tpl === "gradient" ? 18 : tpl === "geometric" ? 18 : tpl === "industrial" ? 14 : tpl === "minimal" ? 14 : 18;
+let sellerRY = contactStartY;
 
+const sellerRows: { label: string; value: string }[] = [];
+if (c.phone) sellerRows.push({ label: "Phone:", value: c.phone });
+if (c.email) sellerRows.push({ label: "Email:", value: c.email });
+if (c.tax_number) sellerRows.push({ label: "HST:", value: c.tax_number });
+if (c.website) sellerRows.push({ label: "Web:", value: c.website });
+
+const socialLines: string[] = c.social_links ? doc.splitTextToSize(c.social_links, 80) : [];
+
+// NEW
+const maxValueW = Math.max(0, ...sellerRows.map((r) => doc.getTextWidth(r.value)));
+const gap = 4;
+const sellerLabelX = rightEnd - maxValueW - gap; // tight column — Phone/Email/HST/Web only
+
+sellerRows.forEach(({ label, value }) => {
+  doc.text(label, sellerLabelX, sellerRY, { align: "right" });
+  doc.text(value, rightEnd, sellerRY, { align: "right" });
+  sellerRY += 4;
+});
+
+if (c.social_links) {
+  const maxLineW = Math.max(...socialLines.map((l: string) => doc.getTextWidth(l)));
+  const socialLabelX = rightEnd - maxLineW - gap; // own column — long URL won't drag the others left
+  doc.text("Social:", socialLabelX, sellerRY, { align: "right" });
+  doc.text(socialLines, rightEnd, sellerRY, { align: "right" });
+  sellerRY += socialLines.length * 4;
+}
+doc.setTextColor(0, 0, 0);
   // Invoice # (left) — single line
-  const metaY = Math.max(sellerRY, startY) + 2;
+  const elegantBottomLineY = (() => {
+  if (tpl !== "elegant") return 0;
+  doc.setFont("times", "bolditalic"); doc.setFontSize(16);
+  const lines = doc.splitTextToSize(c.name, (doc.internal.pageSize.getWidth() / 2) - 10);
+  const addrY = 24 + lines.length * 7;
+  return addrY + 8;
+})();
+const metaY = tpl === "elegant"
+  ? Math.max(sellerRY, elegantBottomLineY) + 4
+  : Math.max(sellerRY, startY) + 2;
   doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(lr, lg, lb);
   const invHashLabel = "INVOICE #  ";
   doc.text(invHashLabel, leftStart, metaY);
@@ -731,16 +757,31 @@ if (tpl === "summary-strip" || tpl === "corporate-blue" || tpl === "banner-green
   }
   if (invoice.customer_tax_number) { doc.text(`HST: ${invoice.customer_tax_number}`, leftStart, yCursor); yCursor += 4; }
   // Right column (parallel) — contact & email
+  // NEW
+  // Right column (parallel) — contact & email
   let rCursor = nameY;
-  const labelX = rightEnd - Math.max(doc.getTextWidth(`HST:  ${invoice.customer_contact || ""}`), doc.getTextWidth(`Email:  ${invoice.customer_email || ""}`));
-  if (invoice.customer_contact) { doc.text(`Phone:`, labelX, rCursor); doc.text(invoice.customer_contact, rightEnd, rCursor, { align: "right" }); rCursor += 4; }
-  if (invoice.customer_email) { doc.text(`Email:`, labelX, rCursor); doc.text(invoice.customer_email, rightEnd, rCursor, { align: "right" }); rCursor += 4; }
+  const custRows: { label: string; value: string }[] = [];
+  if (invoice.customer_contact) custRows.push({ label: "Phone:", value: invoice.customer_contact });
+  if (invoice.customer_email) custRows.push({ label: "Email:", value: invoice.customer_email });
+  const custMaxValueW = Math.max(0, ...custRows.map((r) => doc.getTextWidth(r.value)));
+  const custLabelX = rightEnd - custMaxValueW - 4;
+  custRows.forEach(({ label, value }) => {
+    doc.text(label, custLabelX, rCursor, { align: "right" });
+    doc.text(value, rightEnd, rCursor, { align: "right" });
+    rCursor += 4;
+  });
   yCursor = Math.max(yCursor, rCursor);
 
+  // NEW
   autoTable(doc, {
     startY: yCursor + 6,
     margin: { left: leftStart, right: 14 },
-    head: [["Description", "Qty", "Rate", "Total"]],
+    head: [[
+      { content: "Description", styles: { halign: "left" } },
+      { content: "Qty", styles: { halign: "center" } },
+      { content: "Rate", styles: { halign: "right" } },
+      { content: "Total", styles: { halign: "right" } },
+    ]],
     didParseCell: (data: any) => {
       if (data.column.index === 0) data.cell.styles.halign = "left";
       if (data.column.index === 1) data.cell.styles.halign = "center";
@@ -751,15 +792,16 @@ if (tpl === "summary-strip" || tpl === "corporate-blue" || tpl === "banner-green
       r.item_name, r.quantity,
       fmtMoney(r.unit_price), fmtMoney(r.subtotal),
     ]),
-    headStyles: { fillColor: [pr, pg, pb], textColor: [tpR, tpG, tpB], fontStyle: "bold" },
+    headStyles: { fillColor: [pr, pg, pb], textColor: [tpR, tpG, tpB], fontStyle: "bold", valign: "middle", cellPadding: { top: 3, right: 3, bottom: 3, left: 3 } },
     alternateRowStyles: tpl === "vibrant" ? { fillColor: [255, 245, 240] } : tpl === "modern" ? { fillColor: [240, 248, 245] } : { fillColor: [245, 243, 238] },
-    styles: { font: "helvetica", fontSize: 9 },
+// NEW
+    styles: { font: "helvetica", fontSize: 9, cellPadding: { top: 3, right: 3, bottom: 3, left: 3 } },
     columnStyles: {
       0: { halign: "left" },
       1: { halign: "center", cellWidth: 16 },
       2: { halign: "right", cellWidth: 42 },
       3: { halign: "right", cellWidth: 42 },
-    },
+},
     tableWidth: "auto",
   });
 
