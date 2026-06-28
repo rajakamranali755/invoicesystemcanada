@@ -54,7 +54,7 @@ export function SalesPage() {
   const [notes, setNotes] = useState("");
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().slice(0, 10));
   const [invoiceNumber, setInvoiceNumber] = useState("");
-  const [numberLoading, setNumberLoading] = useState(true);
+  const [numberLoading, setNumberLoading] = useState(false);
   const [editableInvoiceNo, setEditableInvoiceNo] = useState(false);
 
   const { data: companies = [] } = useQuery({
@@ -92,19 +92,7 @@ export function SalesPage() {
 
   useEffect(() => { setRows([newRow()]); }, [companyId]);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data, error } = await supabase.rpc("generate_invoice_number");
-        if (error) throw error;
-        setInvoiceNumber(data as unknown as string);
-      } catch (e) {
-        console.error("Failed to auto-generate invoice number", e);
-      } finally {
-        setNumberLoading(false);
-      }
-    })();
-  }, []); 
+   
 
   const updateRow = (key: string, patch: Partial<Row>) =>
     setRows((rs) => rs.map((r) => (r.key === key ? { ...r, ...patch } : r)));
@@ -143,9 +131,15 @@ export function SalesPage() {
     if (!invoiceNumber.trim()) throw new Error("Invoice number is required.");
     finalInvoiceNumber = invoiceNumber.trim();
     } else {
-    const { data, error: nErr } = await supabase.rpc("generate_invoice_number");
-    if (nErr) throw nErr;
-    finalInvoiceNumber = data as unknown as string;
+    const { data: lastInv } = await supabase
+  .from("invoices")
+  .select("invoice_number")
+  .order("created_at", { ascending: false })
+  .limit(1)
+  .single();
+
+const last = lastInv?.invoice_number ?? "0";
+finalInvoiceNumber = String(Number(last) + 1);
     }
 
       const { data: inv, error: iErr } = await supabase.from("invoices").insert({
