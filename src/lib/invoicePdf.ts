@@ -363,8 +363,10 @@ function buildSpecialLayoutPdf(doc: jsPDF, invoice: Invoice, items: InvoiceItem[
     doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.setTextColor(0, 0, 0);
     doc.text("Total (CAD):", leftStart, y2);
     doc.text(fmtMoney(invoice.grand_total), rightEnd, y2, { align: "right" });
+    drawTermsAndSignature(doc, c, y2 + 12, leftStart, rightEnd);
     return doc;
   }
+
 
   if (tpl === "corporate-blue") {
     let yCursor = 38;
@@ -424,8 +426,11 @@ function buildSpecialLayoutPdf(doc: jsPDF, invoice: Invoice, items: InvoiceItem[
     doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(pr, pg, pb);
     doc.text("TOTAL", rightEnd - 60, y2);
     doc.text(fmtMoney(invoice.grand_total), rightEnd, y2, { align: "right" });
+    drawTermsAndSignature(doc, c, y2 + 12, leftStart, rightEnd);
     return doc;
   }
+
+  // banner-green
 
   // banner-green
   let yCursor = 32;
@@ -485,7 +490,42 @@ function buildSpecialLayoutPdf(doc: jsPDF, invoice: Invoice, items: InvoiceItem[
   doc.setTextColor(tpR, tpG, tpB); doc.setFont("helvetica", "bold");
   doc.text("TOTAL", rightEnd - 56, y2 + 1);
   doc.text(fmtMoney(invoice.grand_total), rightEnd, y2 + 1, { align: "right" });
+  drawTermsAndSignature(doc, c, y2 + 15, leftStart, rightEnd);
   return doc;
+}
+function drawTermsAndSignature(doc: jsPDF, c: Company, y: number, leftStart: number, rightEnd: number) {
+  const [pr, pg, pb] = hexToRgb(c.primary_color);
+  const pageH = doc.internal.pageSize.getHeight();
+  const pageW = doc.internal.pageSize.getWidth();
+
+  if (c.terms) {
+    if (y > 240) { doc.addPage(); y = 20; }
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...readable(pr, pg, pb));
+    doc.text("Terms & Conditions", leftStart, y); y += 6;
+    doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+    y = drawJustifiedTerms(doc, c.terms, leftStart, y, pageW - leftStart - 20);
+    y += 4;
+  }
+
+  const pos = c.signature_position || "right";
+  if (pos !== "none") {
+    const pageH = doc.internal.pageSize.getHeight();
+    const sigBlockW = 70;
+    const sigX = pos === "left" ? leftStart : doc.internal.pageSize.getWidth() - 14 - sigBlockW;
+    let sigBaseY = pageH - 30;
+    if (y > sigBaseY - 18) { doc.addPage(); sigBaseY = pageH - 30; }
+    if (c.signature_url) {
+      try {
+        const fmt = c.signature_url.startsWith("data:image/png") ? "PNG" : "JPEG";
+        doc.addImage(c.signature_url, fmt, sigX, sigBaseY - 18, 50, 16);
+      } catch (e) { console.warn("signature image failed", e); }
+    }
+    doc.setDrawColor(pr, pg, pb); doc.setLineWidth(0.3); doc.line(sigX, sigBaseY, sigX + sigBlockW, sigBaseY);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(0, 0, 0);
+    doc.text("Authorized Signature", sigX, sigBaseY + 5);
+    doc.text(c.name, sigX, sigBaseY + 10);
+  }
+  return y;
 }
 function buildTemplateAPdf(doc: jsPDF, invoice: Invoice, items: InvoiceItem[], c: Company) {
   const W = doc.internal.pageSize.getWidth();
@@ -642,7 +682,8 @@ function buildTemplateAPdf(doc: jsPDF, invoice: Invoice, items: InvoiceItem[], c
     const pageH = doc.internal.pageSize.getHeight();
     const sigBlockW = 70;
     const sigX = pos === "left" ? leftStart : rightEnd - sigBlockW;
-    const sigBaseY = pageH - 30;
+    let sigBaseY = pageH - 30;
+    if (ty > sigBaseY - 18) { doc.addPage(); sigBaseY = pageH - 30; }
     if (c.signature_url) {
       try {
         const fmt = c.signature_url.startsWith("data:image/png") ? "PNG" : "JPEG";
