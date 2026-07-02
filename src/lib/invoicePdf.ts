@@ -1,6 +1,7 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { fmtMoney, type Invoice, type InvoiceItem, type Company } from "@/lib/types";
+import { buildCustomInvoicePdf } from "@/lib/customInvoicePdf";
 
 export interface PdfCustomer {
   name: string;
@@ -699,6 +700,10 @@ export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company:
 
   if (tpl === "template-a") {
     return buildTemplateAPdf(doc, invoice, items, c);
+  }
+
+  if (tpl === "custom") {
+    return buildCustomInvoicePdf(invoice, items, c, (c.custom_layout as never) || undefined);
   }
 
   drawHeader(doc, c, tpl);
