@@ -147,7 +147,8 @@ export function SalesPage() {
     }
     // Retry a few times in case of race / existing conflict
     let attempt = maxSeq + 1;
-    finalInvoiceNumber = `${prefix}${String(attempt).padStart(3, "0")}`;
+    finalInvoiceNumber = `${prefix}${String(attempt).padStart(2, "0")}`;
+
     for (let i = 0; i < 5; i++) {
       const { data: exists } = await supabase
         .from("invoices")
@@ -156,7 +157,8 @@ export function SalesPage() {
         .maybeSingle();
       if (!exists) break;
       attempt += 1;
-      finalInvoiceNumber = `${prefix}${String(attempt).padStart(3, "0")}`;
+      finalInvoiceNumber = `${prefix}${String(attempt).padStart(2, "0")}`;
+
     }
     }
 
