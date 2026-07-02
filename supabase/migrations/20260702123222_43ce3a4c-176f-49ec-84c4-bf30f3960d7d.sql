@@ -1,0 +1,1 @@
+ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS custom_layout jsonb NOT NULL DEFAULT '{}'::jsonb;
