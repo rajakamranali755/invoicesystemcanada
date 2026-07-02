@@ -131,15 +131,33 @@ export function SalesPage() {
     if (!invoiceNumber.trim()) throw new Error("Invoice number is required.");
     finalInvoiceNumber = invoiceNumber.trim();
     } else {
-    const { data: lastInv } = await supabase
-  .from("invoices")
-  .select("invoice_number")
-  .order("created_at", { ascending: false })
-  .limit(1)
-  .single();
-
-const last = lastInv?.invoice_number ?? "0";
-finalInvoiceNumber = String(Number(last) + 1);
+    const now = new Date();
+    const prefix = `${String(now.getFullYear()).slice(-2)}${String(now.getMonth() + 1).padStart(2, "0")}`;
+    // Find the highest invoice number for the current YYMM prefix
+    const { data: monthInvs, error: mErr } = await supabase
+      .from("invoices")
+      .select("invoice_number")
+      .like("invoice_number", `${prefix}%`);
+    if (mErr) throw mErr;
+    let maxSeq = 0;
+    for (const row of monthInvs ?? []) {
+      const suffix = (row.invoice_number ?? "").slice(prefix.length);
+      const n = parseInt(suffix, 10);
+      if (!isNaN(n) && n > maxSeq) maxSeq = n;
+    }
+    // Retry a few times in case of race / existing conflict
+    let attempt = maxSeq + 1;
+    finalInvoiceNumber = `${prefix}${String(attempt).padStart(3, "0")}`;
+    for (let i = 0; i < 5; i++) {
+      const { data: exists } = await supabase
+        .from("invoices")
+        .select("id")
+        .eq("invoice_number", finalInvoiceNumber)
+        .maybeSingle();
+      if (!exists) break;
+      attempt += 1;
+      finalInvoiceNumber = `${prefix}${String(attempt).padStart(3, "0")}`;
+    }
     }
 
       const { data: inv, error: iErr } = await supabase.from("invoices").insert({
