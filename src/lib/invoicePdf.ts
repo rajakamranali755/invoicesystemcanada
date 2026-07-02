@@ -253,6 +253,14 @@ function justifyLine(doc: jsPDF, line: string, x: number, y: number, maxW: numbe
     cx += doc.getTextWidth(w) + gap;
   }
 }
+function drawDashedLine(doc: jsPDF, x1: number, y1: number, x2: number, y2: number, color: [number, number, number] = [0, 0, 0]) {
+  doc.setDrawColor(...color);
+  doc.setLineWidth(0.2);
+  doc.setLineDashPattern([1, 1], 0);
+  doc.line(x1, y1, x2, y2);
+  doc.setLineDashPattern([], 0);
+}
+
 function gridStyle(tpl: string): "ribbon" | "ledger" | "boxed" | "diagonal" | "default" {
   if (tpl === "ribbon" || tpl === "ledger" || tpl === "boxed" || tpl === "diagonal") return tpl;
   return "default";
@@ -689,6 +697,146 @@ function buildTemplateAPdf(doc: jsPDF, invoice: Invoice, items: InvoiceItem[], c
 
   return doc;
 }
+function drawCustomItemsLayout(doc: jsPDF, items: InvoiceItem[], c: Company, tpl: string, startY: number, leftStart: number, rightEnd: number): number {
+  const [pr, pg, pb] = hexToRgb(c.primary_color);
+  const [ar, ag, ab] = hexToRgb(c.accent_color);
+
+  if (tpl === "executive") {
+    let y = startY;
+    doc.setFont("times", "italic"); doc.setFontSize(8); doc.setTextColor(120, 120, 120);
+    doc.text("DESCRIPTION", leftStart, y);
+    doc.text("AMOUNT", rightEnd, y, { align: "right" });
+    y += 2;
+    doc.setDrawColor(pr, pg, pb); doc.setLineWidth(0.3); doc.line(leftStart, y, rightEnd, y);
+    y += 7;
+    items.forEach((r) => {
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(0, 0, 0);
+      const priceStr = fmtMoney(r.subtotal);
+      const priceW = doc.getTextWidth(priceStr);
+      const descW = doc.getTextWidth(r.item_name);
+      doc.text(r.item_name, leftStart, y);
+      doc.text(priceStr, rightEnd, y, { align: "right" });
+      const leaderStart = leftStart + descW + 2;
+      const leaderEnd = rightEnd - priceW - 2;
+      if (leaderEnd > leaderStart) {
+        doc.setTextColor(190, 190, 190);
+        const dots = ".".repeat(Math.max(0, Math.floor((leaderEnd - leaderStart) / 1.3)));
+        doc.text(dots, leaderStart, y);
+      }
+      y += 5;
+      doc.setFont("times", "italic"); doc.setFontSize(7.5); doc.setTextColor(130, 130, 130);
+      doc.text(`${r.quantity} x ${fmtMoney(r.unit_price)}`, leftStart, y);
+      y += 6;
+    });
+    doc.setDrawColor(pr, pg, pb); doc.line(leftStart, y, rightEnd, y);
+    return y + 2;
+  }
+
+  if (tpl === "gradient") {
+    let y = startY;
+    doc.setFont("courier", "bold"); doc.setFontSize(8); doc.setTextColor(pr, pg, pb);
+    doc.text("ITEM", leftStart, y);
+    doc.text("QTY", leftStart + 90, y);
+    doc.text("RATE", leftStart + 115, y);
+    doc.text("AMOUNT", rightEnd, y, { align: "right" });
+    y += 4;
+    drawDashedLine(doc, leftStart, y, rightEnd, y, [pr, pg, pb]);
+    y += 6;
+    items.forEach((r) => {
+      doc.setFont("courier", "normal"); doc.setFontSize(9); doc.setTextColor(0, 0, 0);
+      doc.text(r.item_name, leftStart, y, { maxWidth: 85 });
+      doc.text(String(r.quantity), leftStart + 90, y);
+      doc.text(fmtMoney(r.unit_price), leftStart + 115, y);
+      doc.text(fmtMoney(r.subtotal), rightEnd, y, { align: "right" });
+      y += 6;
+      drawDashedLine(doc, leftStart, y - 2, rightEnd, y - 2, [210, 210, 210]);
+    });
+    y += 1;
+    doc.setDrawColor(pr, pg, pb); doc.setLineWidth(0.5);
+    doc.line(leftStart, y, rightEnd, y);
+    doc.line(leftStart, y + 0.8, rightEnd, y + 0.8);
+    return y + 4;
+  }
+
+  if (tpl === "geometric") {
+    let y = startY;
+    items.forEach((r) => {
+      const blockH = 16;
+      doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.3);
+      doc.roundedRect(leftStart, y, rightEnd - leftStart, blockH, 2, 2, "S");
+      doc.setFillColor(pr, pg, pb);
+      doc.roundedRect(leftStart, y, 3, blockH, 1, 1, "F");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(0, 0, 0);
+      doc.text(r.item_name, leftStart + 8, y + 7);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(130, 130, 130);
+      doc.text(`Qty ${r.quantity}  x  ${fmtMoney(r.unit_price)}`, leftStart + 8, y + 12.5);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(pr, pg, pb);
+      doc.text(fmtMoney(r.subtotal), rightEnd - 4, y + 9.5, { align: "right" });
+      y += blockH + 4;
+    });
+    return y;
+  }
+
+  if (tpl === "ledger") {
+    let y = startY;
+    doc.setFont("courier", "bold"); doc.setFontSize(8); doc.setTextColor(pr, pg, pb);
+    doc.text("ITEMS PURCHASED", leftStart, y);
+    y += 6;
+    items.forEach((r, i) => {
+      doc.setFont("courier", "normal"); doc.setFontSize(9); doc.setTextColor(0, 0, 0);
+      doc.text(r.item_name, leftStart, y);
+      doc.text(fmtMoney(r.subtotal), rightEnd, y, { align: "right" });
+      y += 4.5;
+      doc.setFontSize(7.5); doc.setTextColor(120, 120, 120);
+      doc.text(`${r.quantity} unit(s) @ ${fmtMoney(r.unit_price)}`, leftStart, y);
+      y += 5;
+      if (i < items.length - 1) {
+        doc.setDrawColor(230, 230, 230); doc.setLineWidth(0.2);
+        doc.line(leftStart, y, rightEnd, y);
+        y += 3;
+      }
+    });
+    return y + 2;
+  }
+
+  if (tpl === "diagonal") {
+    let y = startY;
+    items.forEach((r) => {
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(0, 0, 0);
+      doc.text(r.item_name, leftStart, y);
+      doc.text(fmtMoney(r.subtotal), rightEnd, y, { align: "right" });
+      y += 5;
+      doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(ar, ag, ab);
+      doc.text(`${r.quantity} x ${fmtMoney(r.unit_price)}`, leftStart, y);
+      y += 7;
+    });
+    return y;
+  }
+
+  if (tpl === "stacked") {
+    let y = startY + 2;
+    const lineX = leftStart + 2;
+    items.forEach((r, i) => {
+      doc.setFillColor(pr, pg, pb);
+      doc.circle(lineX, y - 1.5, 1.2, "F");
+      if (i < items.length - 1) {
+        doc.setDrawColor(pr, pg, pb); doc.setLineWidth(0.3);
+        doc.line(lineX, y, lineX, y + 11);
+      }
+      doc.setFont("times", "bold"); doc.setFontSize(9.5); doc.setTextColor(0, 0, 0);
+      doc.text(r.item_name, lineX + 6, y);
+      doc.text(fmtMoney(r.subtotal), rightEnd, y, { align: "right" });
+      y += 5;
+      doc.setFont("times", "italic"); doc.setFontSize(7.5); doc.setTextColor(130, 130, 130);
+      doc.text(`${r.quantity} x ${fmtMoney(r.unit_price)}`, lineX + 6, y);
+      y += 8;
+    });
+    return y;
+  }
+
+  return startY;
+}
+
 export function buildInvoicePdf(invoice: Invoice, items: InvoiceItem[], company: Company | null) {
   const tpl = company?.design_template || "classic";
   const c: Company = company || {
@@ -824,7 +972,83 @@ const metaY = tpl === "elegant"
     doc.text(value, rightEnd, rCursor, { align: "right" });
     rCursor += 4;
   });
-  yCursor = Math.max(yCursor, rCursor);
+   yCursor = Math.max(yCursor, rCursor);
+
+  const customLayoutTpls = ["executive", "gradient", "geometric", "ledger", "diagonal", "stacked"];
+  let itemsFinalY: number;
+
+  if (customLayoutTpls.includes(tpl)) {
+    itemsFinalY = drawCustomItemsLayout(doc, items, c, tpl, yCursor + 8, leftStart, rightEnd);
+  } else {
+  let tableTheme: "striped" | "grid" | "plain" = "striped";
+  let headFill: [number, number, number] = [pr, pg, pb];
+  let headText: [number, number, number] = [tpR, tpG, tpB];
+  let altRow: [number, number, number] =
+    tpl === "vibrant" ? [255, 245, 240] : tpl === "modern" ? [240, 248, 245] : [245, 243, 238];
+  let rowLineColor: [number, number, number] = [220, 220, 220];
+  let rowLineWidth = 0;
+  let bodyFont: "helvetica" | "courier" | "times" = "helvetica";
+
+  if (tpl === "classic") {
+    tableTheme = "grid";
+    rowLineColor = [pr, pg, pb];
+    rowLineWidth = 0.15;
+  } else if (tpl === "modern") {
+    tableTheme = "plain";
+    headFill = [255, 255, 255];
+    headText = [pr, pg, pb];
+    rowLineColor = [pr, pg, pb];
+    rowLineWidth = 0.4;
+    altRow = [255, 255, 255];
+  } else if (tpl === "minimal") {
+    tableTheme = "plain";
+    headFill = [255, 255, 255];
+    headText = [40, 40, 40];
+    altRow = [255, 255, 255];
+    rowLineColor = [30, 30, 30];
+    rowLineWidth = 0.3;
+  } else if (tpl === "monochrome") {
+    tableTheme = "grid";
+    headFill = [0, 0, 0];
+    headText = [255, 255, 255];
+    altRow = [255, 255, 255];
+    rowLineColor = [0, 0, 0];
+    rowLineWidth = 0.2;
+    bodyFont = "courier";
+  } else if (tpl === "industrial") {
+    tableTheme = "grid";
+    rowLineColor = [ar, ag, ab];
+    rowLineWidth = 0.3;
+    bodyFont = "courier";
+  } else if (tpl === "elegant") {
+    tableTheme = "plain";
+    headFill = [255, 255, 255];
+    headText = [pr, pg, pb];
+    altRow = [255, 255, 255];
+    rowLineColor = [pr, pg, pb];
+    rowLineWidth = 0.2;
+    bodyFont = "times";
+  } else if (tpl === "bold") {
+    tableTheme = "grid";
+    rowLineColor = [pr, pg, pb];
+    rowLineWidth = 0.6;
+  } else if (tpl === "corporate") {
+    tableTheme = "striped";
+    altRow = lighten(ar, ag, ab, 0.75);
+    rowLineColor = [255, 255, 255];
+    rowLineWidth = 0;
+  } else if (tpl === "ribbon") {
+    tableTheme = "plain";
+    headFill = [255, 255, 255];
+    headText = [pr, pg, pb];
+    altRow = [255, 255, 255];
+    rowLineColor = [200, 200, 200];
+    rowLineWidth = 0.25;
+  } else if (tpl === "boxed") {
+    tableTheme = "grid";
+    rowLineColor = [pr, pg, pb];
+    rowLineWidth = 0.5;
+  }
 
   // NEW
   autoTable(doc, {
@@ -846,20 +1070,23 @@ const metaY = tpl === "elegant"
       r.item_name, r.quantity,
       fmtMoney(r.unit_price), fmtMoney(r.subtotal),
     ]),
-    headStyles: { fillColor: [pr, pg, pb], textColor: [tpR, tpG, tpB], fontStyle: "bold", valign: "middle", cellPadding: { top: 3, right: 3, bottom: 3, left: 3 } },
-    alternateRowStyles: tpl === "vibrant" ? { fillColor: [255, 245, 240] } : tpl === "modern" ? { fillColor: [240, 248, 245] } : { fillColor: [245, 243, 238] },
-// NEW
-    styles: { font: "helvetica", fontSize: 9, cellPadding: { top: 3, right: 3, bottom: 3, left: 3 } },
+    theme: tableTheme,
+    headStyles: { fillColor: headFill, textColor: headText, fontStyle: "bold", valign: "middle", cellPadding: { top: 3, right: 3, bottom: 3, left: 3 } },
+    alternateRowStyles: { fillColor: altRow },
+    styles: { font: bodyFont, fontSize: 9, cellPadding: { top: 3, right: 3, bottom: 3, left: 3 }, lineColor: rowLineColor, lineWidth: rowLineWidth },
     columnStyles: {
       0: { halign: "left" },
       1: { halign: "center", cellWidth: 16 },
       2: { halign: "right", cellWidth: 42 },
       3: { halign: "right", cellWidth: 42 },
 },
-    tableWidth: "auto",
+   tableWidth: "auto",
   });
 
-  let y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+  itemsFinalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
+  }
+
+  let y = itemsFinalY + 8;
   // Totals — right-aligned at the right table edge
   doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(0, 0, 0);
   doc.text(`Subtotal:  ${fmtMoney(invoice.total_subtotal)}`, rightEnd, y, { align: "right" }); y += 6;
@@ -886,7 +1113,8 @@ const metaY = tpl === "elegant"
     doc.setTextColor(0, 0, 0); y += 8;
   }
 
-  y = Math.max(y, (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 30);
+   y = Math.max(y, itemsFinalY + 30);
+
   if (c.terms) {
     if (y > 240) { doc.addPage(); y = 20; }
     doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...readable(pr, pg, pb));
