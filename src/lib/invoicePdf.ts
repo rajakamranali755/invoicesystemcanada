@@ -210,9 +210,9 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     doc.text(c.address.split("\n").join(", "), W / 2, 39, { align: "center" });
 
     doc.setDrawColor(ar, ag, ab); doc.setLineWidth(0.6);
-    doc.line(W - 50, 10, W - 14, 10);
-    doc.line(W - 42, 15, W - 14, 15);
-    doc.line(W - 34, 20, W - 14, 20);
+    doc.line(14, 10, 50, 10);
+    doc.line(14, 15, 42, 15);
+    doc.line(14, 20, 34, 20);
   }
    else if (tpl === "summary-strip") {
     doc.setFillColor(ar, ag, ab); doc.rect(14, 6, 30, 2, "F");
