@@ -31,7 +31,44 @@ export interface Company {
   signature_position?: "left" | "right" | "none";
   website?: string;
   social_links?: string;
+  custom_layout?: CustomLayout | Record<string, never>;
 }
+
+export type ItemsTableStyle =
+  | "compact"
+  | "zebra"
+  | "bordered"
+  | "minimal"
+  | "boxed"
+  | "spacious";
+
+export interface CustomLayout {
+  name?: string;
+  headerAlign?: "left" | "center" | "right";
+  headerStyle?: "solid" | "stripe" | "none";
+  sellerContact?: "top-right" | "below-header" | "hidden";
+  billTo?: "left" | "right";
+  customerContact?: "opposite" | "below-billto" | "hidden";
+  invoiceMeta?: "split" | "both-left" | "both-right";
+  totals?: "right" | "left";
+  signature?: "left" | "right" | "none";
+  itemsTable?: ItemsTableStyle;
+  showLogo?: boolean;
+}
+
+export const DEFAULT_CUSTOM_LAYOUT: CustomLayout = {
+  name: "My Custom Design",
+  headerAlign: "left",
+  headerStyle: "solid",
+  sellerContact: "top-right",
+  billTo: "left",
+  customerContact: "opposite",
+  invoiceMeta: "split",
+  totals: "right",
+  signature: "right",
+  itemsTable: "zebra",
+  showLogo: true,
+};
 
 export interface CompanyService {
   id: string;

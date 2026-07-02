@@ -15,8 +15,11 @@ import { toast } from "sonner";
 import { buildInvoicePdf } from "@/lib/invoicePdf";
 import { formatHst, isValidHst, HST_PLACEHOLDER } from "@/lib/hst";
 import { formatPhone, PHONE_PLACEHOLDER } from "@/lib/phone";
+import { CustomTemplateBuilder } from "@/components/CustomTemplateBuilder";
+import { DEFAULT_CUSTOM_LAYOUT, type CustomLayout } from "@/lib/types";
 
 const TEMPLATES = [
+  { value: "custom", label: "★ Custom (Design Your Own)" },
   { value: "classic", label: "Classic (Navy / Gold)" },
   { value: "modern", label: "Modern (Teal / Charcoal)" },
   { value: "vibrant", label: "Vibrant (Orange / Dark)" },
@@ -46,6 +49,7 @@ const empty = {
   design_template: "classic", terms: "", role: "seller" as "seller" | "purchaser" | "both",
   signature_url: "", signature_position: "right" as "left" | "right" | "none",
   website: "", social_links: "",
+  custom_layout: {} as CustomLayout,
 };
 
 const ROLES = [
@@ -76,7 +80,13 @@ export function CompaniesPage() {
       if (form.tax_number && !isValidHst(form.tax_number)) {
         throw new Error("HST must be 9 digits (format: 12345 6789).");
       }
-      const { data, error } = await supabase.from("companies").insert(form).select().single();
+      const payload = {
+        ...form,
+        custom_layout: form.design_template === "custom"
+          ? ({ ...DEFAULT_CUSTOM_LAYOUT, ...(form.custom_layout || {}) } as unknown as never)
+          : ({} as unknown as never),
+      };
+      const { data, error } = await supabase.from("companies").insert(payload).select().single();
       if (error) {
         if ((error as { code?: string }).code === "23505") {
           const msg = (error as { message?: string }).message || "";
@@ -214,6 +224,15 @@ export function CompaniesPage() {
               {form.signature_url && <img src={form.signature_url} alt="signature" className="mt-2 h-12 object-contain bg-white border rounded" />}
             </div>
             <div className="md:col-span-3"><Label>Terms & Conditions</Label><Textarea rows={4} value={form.terms} onChange={(e) => setForm({ ...form, terms: e.target.value })} /></div>
+            {form.design_template === "custom" && (
+              <div className="md:col-span-3">
+                <CustomTemplateBuilder
+                  company={form}
+                  value={form.custom_layout || {}}
+                  onChange={(v) => setForm({ ...form, custom_layout: v })}
+                />
+              </div>
+            )}
             <div className="md:col-span-3"><Button onClick={() => create.mutate()} disabled={create.isPending}>{create.isPending ? "Saving..." : "Save Company"}</Button></div>
           </CardContent>
         </Card>

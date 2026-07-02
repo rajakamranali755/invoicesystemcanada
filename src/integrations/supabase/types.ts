@@ -19,6 +19,7 @@ export type Database = {
           accent_color: string
           address: string
           created_at: string
+          custom_layout: Json
           design_template: string
           email: string
           font_family: string
@@ -39,6 +40,7 @@ export type Database = {
           accent_color?: string
           address?: string
           created_at?: string
+          custom_layout?: Json
           design_template?: string
           email?: string
           font_family?: string
@@ -59,6 +61,7 @@ export type Database = {
           accent_color?: string
           address?: string
           created_at?: string
+          custom_layout?: Json
           design_template?: string
           email?: string
           font_family?: string
