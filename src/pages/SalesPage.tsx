@@ -209,7 +209,7 @@ export function SalesPage() {
       } catch (e) {
         console.error("PDF open failed", e);
       }
-      navigate({ to: "/invoices/$id", params: { id } });
+      navigate(`/invoices/${id}`);
     },
     onError: (e: any) => toast.error(e.message),
   });
