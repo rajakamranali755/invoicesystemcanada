@@ -16,8 +16,8 @@ export function InvoiceDetailPage() {
     queryKey: ["invoice", id],
     queryFn: async () => {
       const [{ data: inv, error: e1 }, { data: items, error: e2 }] = await Promise.all([
-        supabase.from("invoices").select("*").eq("id", id).single(),
-        supabase.from("invoice_items").select("*").eq("invoice_id", id),
+        supabase.from("invoices").select("*").eq("id", invoiceId).single(),
+        supabase.from("invoice_items").select("*").eq("invoice_id", invoiceId),
       ]);
       if (e1) throw e1; if (e2) throw e2;
       const invoice = inv as Invoice;

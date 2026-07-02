@@ -123,7 +123,7 @@ export function InvoicesListPage() {
                         <FileText className="h-4 w-4 mr-1" /> PDF
                       </Button>
                       <Button asChild size="sm" variant="outline">
-                        <Link to="/invoices/$id" params={{ id: i.id }}>
+                        <Link to={`/invoices/${i.id}`}>
                           <Eye className="h-4 w-4" />
                         </Link>
                       </Button>

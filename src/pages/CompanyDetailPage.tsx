@@ -61,7 +61,7 @@ export function CompanyDetailPage() {
   const { data: company } = useQuery({
     queryKey: ["company", id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("companies").select("*").eq("id", id).single();
+      const { data, error } = await supabase.from("companies").select("*").eq("id", companyId).single();
       if (error) throw error;
       return data as Company;
     },
@@ -70,7 +70,7 @@ export function CompanyDetailPage() {
   const { data: services = [] } = useQuery({
     queryKey: ["company_services", id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("company_services").select("*").eq("company_id", id).order("category");
+      const { data, error } = await supabase.from("company_services").select("*").eq("company_id", companyId).order("category");
       if (error) throw error;
       return data as CompanyService[];
     },
@@ -94,7 +94,7 @@ export function CompanyDetailPage() {
         signature_position: form.signature_position ?? "right",
         website: form.website ?? "",
         social_links: form.social_links ?? "",
-      }).eq("id", id);
+      }).eq("id", companyId);
       if (error) {
         if ((error as { code?: string }).code === "23505") {
           throw new Error("Another company already uses this HST number.");
@@ -109,7 +109,7 @@ export function CompanyDetailPage() {
   const addService = useMutation({
     mutationFn: async () => {
       if (!newSvc.description.trim()) throw new Error("Description required.");
-      const { error } = await supabase.from("company_services").insert({ ...newSvc, price_label: "", company_id: id });
+      const { error } = await supabase.from("company_services").insert({ ...newSvc, price_label: "", company_id: companyId });
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Service added"); setNewSvc({ category: "", description: "", default_price: 0, notes: "" }); qc.invalidateQueries({ queryKey: ["company_services", id] }); },
@@ -134,7 +134,7 @@ export function CompanyDetailPage() {
           return "";
         };
         return {
-          company_id: id,
+          company_id: companyId,
           category: String(get(["Category", "category"]) ?? "").trim(),
           description: String(get(["Description", "description"]) ?? "").trim(),
           price_label: "",
