@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DEFAULT_CUSTOM_LAYOUT, type CustomLayout, type Company, type ItemsTableStyle } from "@/lib/types";
 import { buildCustomInvoicePdf } from "@/lib/customInvoicePdf";
+import { InvoiceCanvasEditor } from "@/components/InvoiceCanvasEditor";
 
 const TABLE_STYLES: { value: ItemsTableStyle; label: string; desc: string }[] = [
   { value: "compact", label: "Compact", desc: "Tight rows, small font" },
@@ -13,6 +14,9 @@ const TABLE_STYLES: { value: ItemsTableStyle; label: string; desc: string }[] = 
   { value: "minimal", label: "Minimal", desc: "Hairline separators" },
   { value: "boxed", label: "Boxed", desc: "Bold framed cells" },
   { value: "spacious", label: "Spacious", desc: "Generous padding" },
+  { value: "cards", label: "Cards", desc: "Colored rounded cards, no grid" },
+  { value: "list", label: "List", desc: "Underlined rows, no grid" },
+  { value: "receipt", label: "Receipt", desc: "Monospace, no grid" },
 ];
 
 interface Props {
@@ -179,6 +183,16 @@ export function CustomTemplateBuilder({ company, value, onChange }: Props) {
         </div>
 
         <div>
+          <Label className="mb-2 block">Field Positions</Label>
+          <InvoiceCanvasEditor
+            positions={layout.positions}
+            onChange={(p) => set("positions", p)}
+            primary={company.primary_color}
+            accent={company.accent_color}
+          />
+        </div>
+
+        <div>
           <Label className="mb-2 block">Live Preview</Label>
           <div className="border rounded-md overflow-hidden bg-muted" style={{ height: 520 }}>
             {previewUrl ? (
@@ -236,10 +250,31 @@ function MiniTablePreview({ style, primary }: { style: ItemsTableStyle; primary:
       </div>
     );
   }
+if (style === "spacious") {
+    return (
+      <div className="mt-2 space-y-1">
+        <div style={{ ...header, height: 8 }} />
+        {[0, 1, 2].map((i) => <div key={i} className="h-3 bg-muted" />)}
+      </div>
+    );
+  }
+  if (style === "cards") {
+    return (
+      <div className="mt-2 space-y-1">
+        {[0, 1].map((i) => <div key={i} className="h-4 rounded" style={{ background: primary + "cc" }} />)}
+      </div>
+    );
+  }
+  if (style === "list") {
+    return (
+      <div className="mt-2 space-y-1.5">
+        {[0, 1, 2].map((i) => <div key={i} className="h-1.5 border-b" style={{ borderColor: primary + "55" }} />)}
+      </div>
+    );
+  }
   return (
-    <div className="mt-2 space-y-1">
-      <div style={{ ...header, height: 8 }} />
-      {[0, 1, 2].map((i) => <div key={i} className="h-3 bg-muted" />)}
+    <div className="mt-2 space-y-1 font-mono">
+      {[0, 1, 2].map((i) => <div key={i} className="h-1.5 bg-muted" style={{ opacity: 0.7 }} />)}
     </div>
   );
 }
