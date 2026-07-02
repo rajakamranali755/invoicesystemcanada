@@ -1,6 +1,9 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { fmtMoney, type Invoice, type InvoiceItem, type Company, type CustomLayout, type ItemsTableStyle, DEFAULT_CUSTOM_LAYOUT } from "@/lib/types";
+import {
+  fmtMoney, type Invoice, type InvoiceItem, type Company, type CustomLayout,
+  type ItemsTableStyle, type LayoutBlockKey, DEFAULT_CUSTOM_LAYOUT,
+} from "@/lib/types";
 
 function hexToRgb(hex: string): [number, number, number] {
   const h = (hex || "#000000").replace("#", "");
@@ -53,6 +56,7 @@ function tableTheme(style: ItemsTableStyle, primary: [number, number, number], o
         alternateRowStyles: undefined,
       };
     case "spacious":
+    default:
       return {
         theme: "plain" as const,
         headStyles: { fillColor: primary, textColor: onPrimary, fontStyle: "bold" as const, fontSize: 10, cellPadding: 5 },
@@ -62,6 +66,76 @@ function tableTheme(style: ItemsTableStyle, primary: [number, number, number], o
   }
 }
 
+// ---------- NEW: non-tabular item renderers ----------
+// Each returns the finalY (mm) after drawing, same contract as autotable's lastAutoTable.finalY.
+
+function renderItemsCards(
+  doc: jsPDF, items: InvoiceItem[], startY: number, left: number, right: number,
+  primary: [number, number, number], onPrimary: [number, number, number],
+): number {
+  let y = startY;
+  const [pr, pg, pb] = primary;
+  const [tr, tg, tb] = onPrimary;
+  const w = right - left;
+  items.forEach((it) => {
+    const h = 16;
+    doc.setFillColor(pr, pg, pb);
+    doc.roundedRect(left, y, w, h, 2, 2, "F");
+    doc.setTextColor(tr, tg, tb);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+    doc.text(it.item_name, left + 5, y + 7);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
+    doc.text(`Qty ${it.quantity}  ·  ${fmtMoney(it.unit_price)} ea`, left + 5, y + 13);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+    doc.text(fmtMoney(it.subtotal), right - 5, y + 10, { align: "right" });
+    doc.setTextColor(0, 0, 0);
+    y += h + 4;
+  });
+  return y;
+}
+
+function renderItemsList(
+  doc: jsPDF, items: InvoiceItem[], startY: number, left: number, right: number,
+  primary: [number, number, number],
+): number {
+  let y = startY;
+  const [pr, pg, pb] = primary;
+  items.forEach((it) => {
+    doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(0, 0, 0);
+    doc.text(it.item_name, left, y);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(pr, pg, pb);
+    doc.text(fmtMoney(it.subtotal), right, y, { align: "right" });
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(110, 110, 110);
+    doc.text(`${it.quantity} x ${fmtMoney(it.unit_price)}`, left, y + 4.5);
+    doc.setDrawColor(225, 225, 225); doc.setLineWidth(0.2);
+    doc.line(left, y + 7.5, right, y + 7.5);
+    doc.setTextColor(0, 0, 0);
+    y += 11.5;
+  });
+  return y;
+}
+
+function renderItemsReceipt(
+  doc: jsPDF, items: InvoiceItem[], startY: number, left: number, right: number,
+): number {
+  let y = startY;
+  doc.setFont("courier", "normal");
+  items.forEach((it) => {
+    const name = it.item_name.length > 30 ? it.item_name.slice(0, 30) + "…" : it.item_name;
+    doc.setFontSize(9); doc.setTextColor(30, 30, 30);
+    doc.text(name, left, y);
+    doc.text(`${it.quantity} x ${fmtMoney(it.unit_price)}`, right, y, { align: "right" });
+    y += 4.5;
+    doc.setFontSize(8); doc.setTextColor(130, 130, 130);
+    doc.text(`= ${fmtMoney(it.subtotal)}`, left + 3, y);
+    y += 5.5;
+  });
+  doc.setFont("helvetica", "normal"); doc.setTextColor(0, 0, 0);
+  return y;
+}
+
+const NON_TABLE_STYLES: ItemsTableStyle[] = ["cards", "list", "receipt"];
+
 export function buildCustomInvoicePdf(
   invoice: Invoice,
   items: InvoiceItem[],
@@ -69,11 +143,14 @@ export function buildCustomInvoicePdf(
   layoutIn?: CustomLayout,
 ): jsPDF {
   const layout: CustomLayout = { ...DEFAULT_CUSTOM_LAYOUT, ...(layoutIn || {}) };
-  const doc = new jsPDF();
+  const doc = new jsPDF(); // default unit = mm, matches our offsets directly
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
   const leftStart = 14;
   const rightEnd = W - 14;
+
+  // NEW: per-block drag offset lookup (mm)
+  const pos = (k: LayoutBlockKey) => layout.positions?.[k] || { x: 0, y: 0 };
 
   const primary = hexToRgb(company.primary_color || "#0f1b3d");
   const accent = hexToRgb(company.accent_color || "#c9a84c");
@@ -95,17 +172,18 @@ export function buildCustomInvoicePdf(
     headerBottom = 8;
   }
 
+  const headerOff = pos("header");
   const nameColor: [number, number, number] = layout.headerStyle === "solid" ? [tpR, tpG, tpB] : [pr, pg, pb];
   const subColor: [number, number, number] = layout.headerStyle === "solid" ? [tpR, tpG, tpB] : [80, 80, 80];
-  const alignX = layout.headerAlign === "center" ? W / 2 : layout.headerAlign === "right" ? rightEnd : leftStart;
+  const alignX = (layout.headerAlign === "center" ? W / 2 : layout.headerAlign === "right" ? rightEnd : leftStart) + headerOff.x;
   const alignOpt = { align: layout.headerAlign || "left" } as const;
 
   doc.setTextColor(...nameColor);
   doc.setFont("helvetica", "bold"); doc.setFontSize(20);
-  doc.text(company.name || "Company", alignX, layout.headerStyle === "solid" ? 18 : 16, alignOpt);
+  doc.text(company.name || "Company", alignX, (layout.headerStyle === "solid" ? 18 : 16) + headerOff.y, alignOpt);
   doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...subColor);
   const addrLine = (company.address || "").split("\n").filter(Boolean).join(", ");
-  if (addrLine) doc.text(addrLine, alignX, layout.headerStyle === "solid" ? 26 : 22, alignOpt);
+  if (addrLine) doc.text(addrLine, alignX, (layout.headerStyle === "solid" ? 26 : 22) + headerOff.y, alignOpt);
 
   doc.setTextColor(0, 0, 0);
 
@@ -116,75 +194,78 @@ export function buildCustomInvoicePdf(
   if (company.tax_number) sellerRows.push({ label: "HST:", value: company.tax_number });
   if (company.website) sellerRows.push({ label: "Web:", value: company.website });
 
+  const sellerOff = pos("sellerContact");
   let contactBottom = headerBottom;
   if (layout.sellerContact !== "hidden" && sellerRows.length) {
     const useTopRight = layout.sellerContact === "top-right" && layout.headerAlign !== "right";
     doc.setFont("helvetica", "normal"); doc.setFontSize(8);
     if (useTopRight) {
       doc.setTextColor(...(layout.headerStyle === "solid" ? [tpR, tpG, tpB] as [number, number, number] : [60, 60, 60] as [number, number, number]));
-      let y = 14;
+      let y = 14 + sellerOff.y;
       const maxValW = Math.max(...sellerRows.map((r) => doc.getTextWidth(r.value)));
-      const labelX = rightEnd - maxValW - 4;
+      const labelX = rightEnd - maxValW - 4 + sellerOff.x;
       sellerRows.forEach(({ label, value }) => {
         doc.text(label, labelX, y, { align: "right" });
-        doc.text(value, rightEnd, y, { align: "right" });
+        doc.text(value, rightEnd + sellerOff.x, y, { align: "right" });
         y += 4;
       });
     } else {
-      // below-header
       doc.setTextColor(60, 60, 60);
-      let y = headerBottom + 4;
+      let y = headerBottom + 4 + sellerOff.y;
       const line = sellerRows.map((r) => `${r.label} ${r.value}`).join("   ·   ");
-      doc.text(line, leftStart, y, { maxWidth: W - 28 });
+      doc.text(line, leftStart + sellerOff.x, y, { maxWidth: W - 28 });
       contactBottom = y + 5;
     }
   }
   doc.setTextColor(0, 0, 0);
 
   // ---------- INVOICE META ----------
-  const metaY = Math.max(contactBottom, headerBottom) + 8;
+  const metaOff = pos("invoiceMeta");
+  const metaY = Math.max(contactBottom, headerBottom) + 8 + metaOff.y;
   doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(pr, pg, pb);
   const metaLabel = "INVOICE # ";
   const dateLabel = "INVOICE DATE ";
+  const mLeft = leftStart + metaOff.x;
+  const mRight = rightEnd + metaOff.x;
 
   if (layout.invoiceMeta === "both-left") {
-    doc.text(metaLabel, leftStart, metaY);
+    doc.text(metaLabel, mLeft, metaY);
     const w1 = doc.getTextWidth(metaLabel);
     doc.setTextColor(0, 0, 0); doc.setFontSize(12);
-    doc.text(invoice.invoice_number, leftStart + w1, metaY);
+    doc.text(invoice.invoice_number, mLeft + w1, metaY);
     doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(pr, pg, pb);
-    doc.text(dateLabel, leftStart, metaY + 6);
+    doc.text(dateLabel, mLeft, metaY + 6);
     doc.setTextColor(0, 0, 0); doc.setFontSize(11);
-    doc.text(invoice.invoice_date, leftStart + doc.getTextWidth(dateLabel), metaY + 6);
+    doc.text(invoice.invoice_date, mLeft + doc.getTextWidth(dateLabel), metaY + 6);
   } else if (layout.invoiceMeta === "both-right") {
     const numW = doc.getTextWidth(invoice.invoice_number);
     const dateW = doc.getTextWidth(invoice.invoice_date);
     doc.setTextColor(0, 0, 0); doc.setFontSize(12);
-    doc.text(invoice.invoice_number, rightEnd, metaY, { align: "right" });
+    doc.text(invoice.invoice_number, mRight, metaY, { align: "right" });
     doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(pr, pg, pb);
-    doc.text(metaLabel.trim(), rightEnd - numW - 2, metaY, { align: "right" });
+    doc.text(metaLabel.trim(), mRight - numW - 2, metaY, { align: "right" });
     doc.setTextColor(0, 0, 0); doc.setFontSize(11);
-    doc.text(invoice.invoice_date, rightEnd, metaY + 6, { align: "right" });
+    doc.text(invoice.invoice_date, mRight, metaY + 6, { align: "right" });
     doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(pr, pg, pb);
-    doc.text(dateLabel.trim(), rightEnd - dateW - 2, metaY + 6, { align: "right" });
+    doc.text(dateLabel.trim(), mRight - dateW - 2, metaY + 6, { align: "right" });
   } else {
-    // split
-    doc.text(metaLabel, leftStart, metaY);
+    doc.text(metaLabel, mLeft, metaY);
     const w1 = doc.getTextWidth(metaLabel);
     doc.setTextColor(0, 0, 0); doc.setFontSize(12);
-    doc.text(invoice.invoice_number, leftStart + w1, metaY);
+    doc.text(invoice.invoice_number, mLeft + w1, metaY);
     const dateW = doc.getTextWidth(invoice.invoice_date);
     doc.setFontSize(12); doc.setFont("helvetica", "bold");
-    doc.text(invoice.invoice_date, rightEnd, metaY, { align: "right" });
+    doc.text(invoice.invoice_date, mRight, metaY, { align: "right" });
     doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(pr, pg, pb);
-    doc.text("INVOICE DATE", rightEnd - dateW - 3, metaY, { align: "right" });
+    doc.text("INVOICE DATE", mRight - dateW - 3, metaY, { align: "right" });
   }
   doc.setTextColor(0, 0, 0);
 
   // ---------- BILL TO + CUSTOMER CONTACT ----------
-  const blockY = metaY + 12;
+  const billOff = pos("billTo");
+  const blockY = metaY + 12 + billOff.y;
   const billLeftSide = layout.billTo === "left";
-  const billX = billLeftSide ? leftStart : rightEnd;
+  const billX = (billLeftSide ? leftStart : rightEnd) + billOff.x;
   const billAlign = billLeftSide ? "left" : "right";
   const contactSide = layout.customerContact === "hidden"
     ? null
@@ -206,6 +287,7 @@ export function buildCustomInvoicePdf(
   }
   if (invoice.customer_tax_number) { doc.text(`HST: ${invoice.customer_tax_number}`, billX, bY, { align: billAlign }); bY += 4.5; }
 
+  const custOff = pos("customerContact");
   let cY = bY;
   if (contactSide) {
     const custRows: { label: string; value: string }[] = [];
@@ -213,27 +295,27 @@ export function buildCustomInvoicePdf(
     if (invoice.customer_email) custRows.push({ label: "Email:", value: invoice.customer_email });
     if (custRows.length) {
       if (layout.customerContact === "below-billto") {
-        cY = bY + 2;
+        cY = bY + 2 + custOff.y;
         custRows.forEach(({ label, value }) => {
-          doc.text(`${label} ${value}`, billX, cY, { align: billAlign });
+          doc.text(`${label} ${value}`, billX + custOff.x, cY, { align: billAlign });
           cY += 4;
         });
       } else {
         const isRight = contactSide === "right";
-        const cx = isRight ? rightEnd : leftStart;
-        let ry = blockY + 6;
+        const cx = (isRight ? rightEnd : leftStart) + custOff.x;
+        let ry = blockY + 6 + custOff.y;
         const maxValW = Math.max(...custRows.map((r) => doc.getTextWidth(r.value)));
-        const labelX = isRight ? rightEnd - maxValW - 4 : leftStart;
-        const valX = isRight ? rightEnd : leftStart + doc.getTextWidth("Phone:") + 4;
+        const labelX = isRight ? cx - maxValW - 4 : cx;
+        const valX = isRight ? cx : cx + doc.getTextWidth("Phone:") + 4;
         doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(pr, pg, pb);
-        doc.text("CONTACT", cx, blockY, { align: isRight ? "right" : "left" });
+        doc.text("CONTACT", cx, blockY + custOff.y, { align: isRight ? "right" : "left" });
         doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(0, 0, 0);
         custRows.forEach(({ label, value }) => {
           if (isRight) {
             doc.text(label, labelX, ry, { align: "right" });
-            doc.text(value, rightEnd, ry, { align: "right" });
+            doc.text(value, cx, ry, { align: "right" });
           } else {
-            doc.text(label, leftStart, ry);
+            doc.text(label, cx, ry);
             doc.text(value, valX, ry);
           }
           ry += 4.5;
@@ -245,35 +327,50 @@ export function buildCustomInvoicePdf(
 
   const tableStartY = Math.max(bY, cY) + 8;
 
-  // ---------- ITEMS TABLE ----------
-  const theme = tableTheme(layout.itemsTable || "zebra", primary, onPrimary);
-  autoTable(doc, {
-    startY: tableStartY,
-    margin: { left: leftStart, right: 14 },
-    head: [[
-      { content: "Description", styles: { halign: "left" } },
-      { content: "Qty", styles: { halign: "center" } },
-      { content: "Rate", styles: { halign: "right" } },
-      { content: "Total", styles: { halign: "right" } },
-    ]],
-    body: items.map((r) => [r.item_name, r.quantity, fmtMoney(r.unit_price), fmtMoney(r.subtotal)]),
-    theme: theme.theme,
-    headStyles: theme.headStyles,
-    styles: theme.styles,
-    alternateRowStyles: theme.alternateRowStyles,
-    columnStyles: {
-      0: { halign: "left" },
-      1: { halign: "center", cellWidth: 16 },
-      2: { halign: "right", cellWidth: 42 },
-      3: { halign: "right", cellWidth: 42 },
-    },
-  });
+  // ---------- ITEMS ----------
+  const tableOff = pos("itemsTable");
+  const tLeft = leftStart + tableOff.x;
+  const tRight = rightEnd + tableOff.x;
+  const tStartY = tableStartY + tableOff.y;
+  const style = layout.itemsTable || "zebra";
+
+  let itemsFinalY: number;
+  if (NON_TABLE_STYLES.includes(style)) {
+    if (style === "cards") itemsFinalY = renderItemsCards(doc, items, tStartY, tLeft, tRight, primary, onPrimary);
+    else if (style === "list") itemsFinalY = renderItemsList(doc, items, tStartY, tLeft, tRight, primary);
+    else itemsFinalY = renderItemsReceipt(doc, items, tStartY, tLeft, tRight);
+  } else {
+    const theme = tableTheme(style, primary, onPrimary);
+    autoTable(doc, {
+      startY: tStartY,
+      margin: { left: tLeft, right: W - tRight },
+      head: [[
+        { content: "Description", styles: { halign: "left" } },
+        { content: "Qty", styles: { halign: "center" } },
+        { content: "Rate", styles: { halign: "right" } },
+        { content: "Total", styles: { halign: "right" } },
+      ]],
+      body: items.map((r) => [r.item_name, r.quantity, fmtMoney(r.unit_price), fmtMoney(r.subtotal)]),
+      theme: theme.theme,
+      headStyles: theme.headStyles,
+      styles: theme.styles,
+      alternateRowStyles: theme.alternateRowStyles,
+      columnStyles: {
+        0: { halign: "left" },
+        1: { halign: "center", cellWidth: 16 },
+        2: { halign: "right", cellWidth: 42 },
+        3: { halign: "right", cellWidth: 42 },
+      },
+    });
+    itemsFinalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
+  }
 
   // ---------- TOTALS ----------
-  let ty = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+  const totalsOff = pos("totals");
+  let ty = itemsFinalY + 8 + totalsOff.y;
   const totalsRight = (layout.totals || "right") === "right";
-  const anchor = totalsRight ? rightEnd : leftStart + 90;
-  const anchorAlign = totalsRight ? "right" : "right";
+  const anchor = (totalsRight ? rightEnd : leftStart + 90) + totalsOff.x;
+  const anchorAlign = "right" as const;
 
   doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(30, 30, 30);
   doc.text(`Subtotal:  ${fmtMoney(invoice.total_subtotal)}`, anchor, ty, { align: anchorAlign }); ty += 6;
@@ -284,7 +381,7 @@ export function buildCustomInvoicePdf(
   const tdVal = fmtMoney(invoice.grand_total);
   const tdW = doc.getTextWidth(tdLabel) + doc.getTextWidth(tdVal) + 30;
   doc.setFillColor(pr, pg, pb);
-  const boxX = totalsRight ? anchor - tdW : leftStart;
+  const boxX = totalsRight ? anchor - tdW : leftStart + totalsOff.x;
   doc.rect(boxX, ty - 5, tdW, 9, "F");
   doc.setTextColor(tpR, tpG, tpB);
   doc.text(tdLabel, boxX + 6, ty + 1);
@@ -300,22 +397,26 @@ export function buildCustomInvoicePdf(
   }
 
   // ---------- TERMS ----------
+  const termsOff = pos("terms");
   if (company.terms) {
     if (ty > 240) { doc.addPage(); ty = 20; }
+    const termsX = leftStart + termsOff.x;
+    ty += termsOff.y;
     doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(pr, pg, pb);
-    doc.text("Terms & Conditions", leftStart, ty); ty += 6;
+    doc.text("Terms & Conditions", termsX, ty); ty += 6;
     doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "normal"); doc.setFontSize(8);
-    const lines = doc.splitTextToSize(company.terms, W - leftStart - 20);
-    doc.text(lines, leftStart, ty);
+    const lines = doc.splitTextToSize(company.terms, W - termsX - 20);
+    doc.text(lines, termsX, ty);
     ty += lines.length * 4;
   }
 
   // ---------- SIGNATURE ----------
+  const sigOff = pos("signature");
   const sig = layout.signature || "right";
   if (sig !== "none") {
     const sigBlockW = 70;
-    const sigX = sig === "left" ? leftStart : rightEnd - sigBlockW;
-    const sigBaseY = H - 30;
+    const sigX = (sig === "left" ? leftStart : rightEnd - sigBlockW) + sigOff.x;
+    const sigBaseY = H - 30 + sigOff.y;
     if (company.signature_url) {
       try {
         const fmt = company.signature_url.startsWith("data:image/png") ? "PNG" : "JPEG";
