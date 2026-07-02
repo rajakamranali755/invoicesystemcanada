@@ -777,17 +777,17 @@ function drawCustomItemsLayout(doc: jsPDF, items: InvoiceItem[], c: Company, tpl
     return y;
   }
 
-  if (tpl === "ledger") {
+if (tpl === "ledger") {
     let y = startY;
     doc.setFont("courier", "bold"); doc.setFontSize(8); doc.setTextColor(pr, pg, pb);
     doc.text("ITEMS PURCHASED", leftStart, y);
     y += 6;
     items.forEach((r, i) => {
-      doc.setFont("courier", "normal"); doc.setFontSize(9); doc.setTextColor(0, 0, 0);
+      doc.setFont("courier", "bold"); doc.setFontSize(9.5); doc.setTextColor(0, 0, 0);
       doc.text(r.item_name, leftStart, y);
       doc.text(fmtMoney(r.subtotal), rightEnd, y, { align: "right" });
       y += 4.5;
-      doc.setFontSize(7.5); doc.setTextColor(120, 120, 120);
+      doc.setFont("courier", "normal"); doc.setFontSize(7.5); doc.setTextColor(90, 90, 90);
       doc.text(`${r.quantity} unit(s) @ ${fmtMoney(r.unit_price)}`, leftStart, y);
       y += 5;
       if (i < items.length - 1) {
@@ -798,7 +798,6 @@ function drawCustomItemsLayout(doc: jsPDF, items: InvoiceItem[], c: Company, tpl
     });
     return y + 2;
   }
-
   if (tpl === "diagonal") {
     let y = startY;
     items.forEach((r) => {
