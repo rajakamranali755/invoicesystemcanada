@@ -18,8 +18,11 @@ import { formatHst, isValidHst, HST_PLACEHOLDER } from "@/lib/hst";
 import { formatPhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { fmtMoney } from "@/lib/types";
 import { useParams } from "react-router-dom";
+import { CustomTemplateBuilder } from "@/components/CustomTemplateBuilder";
+import { DEFAULT_CUSTOM_LAYOUT, type CustomLayout } from "@/lib/types";
 
 const TEMPLATES = [
+  { value: "custom", label: "★ Custom (Design Your Own)" },
   { value: "classic", label: "Classic (Navy / Gold)" },
   { value: "modern", label: "Modern (Teal / Charcoal)" },
   { value: "vibrant", label: "Vibrant (Orange / Dark)" },
@@ -94,6 +97,9 @@ export function CompanyDetailPage() {
         signature_position: form.signature_position ?? "right",
         website: form.website ?? "",
         social_links: form.social_links ?? "",
+        custom_layout: (form.design_template === "custom"
+          ? { ...DEFAULT_CUSTOM_LAYOUT, ...(form.custom_layout || {}) }
+          : (form.custom_layout || {})) as unknown as never,
       }).eq("id", companyId);
       if (error) {
         if ((error as { code?: string }).code === "23505") {
@@ -260,6 +266,15 @@ export function CompanyDetailPage() {
             )}
           </div>
           <div className="md:col-span-3"><Label>Terms & Conditions</Label><Textarea rows={6} value={form.terms} onChange={(e) => setForm({ ...form, terms: e.target.value })} /></div>
+          {form.design_template === "custom" && (
+            <div className="md:col-span-3">
+              <CustomTemplateBuilder
+                company={form}
+                value={(form.custom_layout as CustomLayout) || {}}
+                onChange={(v) => setForm({ ...form, custom_layout: v })}
+              />
+            </div>
+          )}
           <div className="md:col-span-3"><Button onClick={() => saveCompany.mutate()} disabled={saveCompany.isPending}><Save className="h-4 w-4 mr-1" /> Save Changes</Button></div>
         </CardContent>
       </Card>
