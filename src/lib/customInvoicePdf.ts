@@ -34,15 +34,15 @@ function tableTheme(style: ItemsTableStyle, primary: [number, number, number], o
     case "bordered":
       return {
         theme: "grid" as const,
-        headStyles: { fillColor: primary, textColor: onPrimary, fontStyle: "bold" as const, fontSize: 9, cellPadding: 3, lineWidth: 0.2, lineColor: [180, 180, 180] },
-        styles: { font: "helvetica", fontSize: 9, cellPadding: 3, lineWidth: 0.2, lineColor: [200, 200, 200] },
+        headStyles: { fillColor: primary, textColor: onPrimary, fontStyle: "bold" as const, fontSize: 9, cellPadding: 3, lineWidth: 0.2, lineColor: [180, 180, 180] as [number, number, number] },
+        styles: { font: "helvetica", fontSize: 9, cellPadding: 3, lineWidth: 0.2, lineColor: [200, 200, 200] as [number, number, number] },
         alternateRowStyles: undefined,
       };
     case "minimal":
       return {
         theme: "plain" as const,
-        headStyles: { textColor: [40, 40, 40] as [number, number, number], fontStyle: "bold" as const, fontSize: 9, cellPadding: { top: 2, right: 3, bottom: 4, left: 3 }, lineWidth: { bottom: 0.4 }, lineColor: primary },
-        styles: { font: "helvetica", fontSize: 9, cellPadding: 3, lineWidth: { bottom: 0.1 }, lineColor: [220, 220, 220] as [number, number, number] },
+        headStyles: { textColor: [40, 40, 40] as [number, number, number], fontStyle: "bold" as const, fontSize: 9, cellPadding: 3, lineWidth: 0.4, lineColor: primary },
+        styles: { font: "helvetica", fontSize: 9, cellPadding: 3, lineWidth: 0.1, lineColor: [220, 220, 220] as [number, number, number] },
         alternateRowStyles: undefined,
       };
     case "boxed":
