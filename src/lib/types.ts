@@ -40,7 +40,26 @@ export type ItemsTableStyle =
   | "bordered"
   | "minimal"
   | "boxed"
-  | "spacious";
+  | "spacious"
+  | "cards"
+  | "list"
+  | "receipt";
+
+export interface FieldPosition {
+  x: number;
+  y: number;
+}
+
+export type LayoutBlockKey =
+  | "header"
+  | "sellerContact"
+  | "invoiceMeta"
+  | "billTo"
+  | "customerContact"
+  | "itemsTable"
+  | "totals"
+  | "terms"
+  | "signature";
 
 export interface CustomLayout {
   name?: string;
@@ -54,6 +73,7 @@ export interface CustomLayout {
   signature?: "left" | "right" | "none";
   itemsTable?: ItemsTableStyle;
   showLogo?: boolean;
+  positions?: Partial<Record<LayoutBlockKey, FieldPosition>>;
 }
 
 export const DEFAULT_CUSTOM_LAYOUT: CustomLayout = {
@@ -68,6 +88,7 @@ export const DEFAULT_CUSTOM_LAYOUT: CustomLayout = {
   signature: "right",
   itemsTable: "zebra",
   showLogo: true,
+  positions: {},
 };
 
 export interface CompanyService {
