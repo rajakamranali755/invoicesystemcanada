@@ -163,16 +163,16 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     doc.setFont("courier", "normal"); doc.setFontSize(8);
     doc.text(c.address.split("\n").join(",  "), 10, 26);
 
-  } else if (tpl === "ribbon") {
-    doc.setFillColor(pr, pg, pb); doc.rect(0, 0, 16, 50, "F");
-    doc.setFillColor(ar, ag, ab); doc.rect(16, 0, 2, 50, "F");
-    doc.setTextColor(tpR, tpG, tpB); doc.setFont(nf, ns); doc.setFontSize(20);
+ } else if (tpl === "ribbon") {
+    doc.setFillColor(pr, pg, pb); doc.rect(0, 0, 16, 26, "F");
+    doc.setFillColor(ar, ag, ab); doc.rect(16, 0, 2, 26, "F");
+    doc.setTextColor(...readable(pr, pg, pb)); doc.setFont(nf, ns); doc.setFontSize(20);
     doc.text(c.name, 24, 18, { maxWidth: W - 80 });
     doc.setTextColor(80, 80, 80); doc.setFont("helvetica", "normal"); doc.setFontSize(8);
     doc.text(c.address.split("\n").join(", "), 24, 26, { maxWidth: W - 80 });
-
-    
-  } else if (tpl === "ledger") {
+  }
+  
+  else if (tpl === "ledger") {
     doc.setFillColor(pr, pg, pb); doc.rect(0, 0, W, 2, "F");
     doc.setTextColor(...readable(pr, pg, pb)); doc.setFont(nf, ns); doc.setFontSize(18);
     doc.text(c.name.toUpperCase(), 14, 20);
@@ -207,9 +207,8 @@ function drawHeader(doc: jsPDF, c: Company, tpl: string) {
     doc.text(c.name, W / 2, 32, { align: "center" });
     doc.setTextColor(120, 120, 120); doc.setFont("helvetica", "normal"); doc.setFontSize(8);
     doc.text(c.address.split("\n").join(", "), W / 2, 39, { align: "center" });
-
-    doc.setDrawColor(ar, ag, ab); doc.setLineWidth(0.4); doc.line(40, 43, W - 40, 43);
-  } else if (tpl === "summary-strip") {
+  }
+   else if (tpl === "summary-strip") {
     doc.setFillColor(ar, ag, ab); doc.rect(14, 6, 30, 2, "F");
     doc.setTextColor(30, 30, 30); doc.setFont(nf, ns); doc.setFontSize(22);
     doc.text(c.name, 14, 24);
@@ -370,18 +369,21 @@ function buildSpecialLayoutPdf(doc: jsPDF, invoice: Invoice, items: InvoiceItem[
 
   if (tpl === "corporate-blue") {
     let yCursor = 38;
-    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(90, 90, 90);
-    doc.text("DATE", rightEnd - 70, yCursor);
-    doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "bold");
-    doc.text(invoice.invoice_date, rightEnd, yCursor, { align: "right" }); yCursor += 6;
-    doc.setFont("helvetica", "normal"); doc.setTextColor(90, 90, 90);
-    doc.text("INVOICE #", rightEnd - 70, yCursor);
-    doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "bold");
-    doc.text(invoice.invoice_number, rightEnd, yCursor, { align: "right" }); yCursor += 6;
-    doc.setFont("helvetica", "normal"); doc.setTextColor(90, 90, 90);
-    doc.text("DUE DATE", rightEnd - 70, yCursor);
-    doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "bold");
-    doc.text(invoice.invoice_date, rightEnd, yCursor, { align: "right" });
+    const cbRows: { label: string; value: string }[] = [
+      { label: "DATE", value: invoice.invoice_date },
+      { label: "INVOICE #", value: invoice.invoice_number },
+      { label: "DUE DATE", value: invoice.invoice_date },
+    ];
+    const cbGap = 4;
+    cbRows.forEach(({ label, value }) => {
+      doc.setFont("helvetica", "bold"); doc.setFontSize(9);
+      const valW = doc.getTextWidth(value);
+      doc.setTextColor(0, 0, 0);
+      doc.text(value, rightEnd, yCursor, { align: "right" });
+      doc.setFont("helvetica", "normal"); doc.setTextColor(90, 90, 90);
+      doc.text(label, rightEnd - valW - cbGap, yCursor, { align: "right" });
+      yCursor += 6;
+    });
 
     const billY = 56;
     doc.setFont("helvetica", "bold"); doc.setFontSize(8);
@@ -547,14 +549,15 @@ function buildTemplateAPdf(doc: jsPDF, invoice: Invoice, items: InvoiceItem[], c
   }
 
   // contact block (top-right): bold coloured label + dark value
+  // contact block (top-right): right-aligned label + value, flush to right margin
   let hy = 14;
   const contactRow = (label: string, value?: string) => {
     if (!value) return;
-    doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(hr, hg, hb);
-    doc.text(label, rightColX, hy);
-    const lw = doc.getTextWidth(label + " ");
-    doc.setFont("helvetica", "normal"); doc.setTextColor(40, 40, 40);
-    doc.text(String(value), rightColX + lw, hy);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(40, 40, 40);
+    const valW = doc.getTextWidth(String(value));
+    doc.text(String(value), rightEnd, hy, { align: "right" });
+    doc.setFont("helvetica", "bold"); doc.setTextColor(hr, hg, hb);
+    doc.text(label, rightEnd - valW - 2, hy, { align: "right" });
     hy += 5.5;
   };
   contactRow("HST NUMBER:", c.tax_number);
@@ -568,21 +571,7 @@ function buildTemplateAPdf(doc: jsPDF, invoice: Invoice, items: InvoiceItem[], c
 
   // ---------- INVOICE # (left) + DATE (right) ----------
   doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(hr, hg, hb);
-  doc.text("INVOICE #:", leftStart, y);
-  doc.setFont("helvetica", "normal"); doc.setTextColor(40, 40, 40);
-  doc.text(invoice.invoice_number, leftStart + doc.getTextWidth("INVOICE #:  "), y);
-  doc.setFont("helvetica", "bold"); doc.setTextColor(hr, hg, hb);
-  const dW = doc.getTextWidth(invoice.invoice_date);
-  doc.text(invoice.invoice_date, rightEnd, y, { align: "right" });
-  doc.text("DATE:", rightEnd - dW - 2, y, { align: "right" });
-  y += 8;
-
-  // ---------- BILL TO / PROJECT DESCRIPTION ----------
-  doc.setDrawColor(200, 200, 200); doc.line(leftStart, y, rightEnd, y);
-  y += 6;
-  doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(hr, hg, hb);
   doc.text("BILL TO", leftStart, y);
-  doc.text("PROJECT DESCRIPTION", rightColX, y);
   y += 3;
   doc.setDrawColor(220, 220, 220); doc.line(leftStart, y, rightEnd, y);
   y += 6;
@@ -591,38 +580,40 @@ function buildTemplateAPdf(doc: jsPDF, invoice: Invoice, items: InvoiceItem[], c
   let leftY = y;
   doc.text(invoice.customer_name || "—", leftStart, leftY); leftY += 5;
   if (invoice.customer_address) {
-    const lines = doc.splitTextToSize(invoice.customer_address, rightColX - leftStart - 6);
+    const cleanAddress = invoice.customer_address
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .join(", ");
+    const lines = doc.splitTextToSize(cleanAddress, rightColX - leftStart - 6);
     doc.text(lines, leftStart, leftY); leftY += lines.length * 5;
   }
   if (invoice.customer_tax_number) { doc.text(`HST: ${invoice.customer_tax_number}`, leftStart, leftY); leftY += 5; }
   if (invoice.customer_email) { doc.text(invoice.customer_email, leftStart, leftY); leftY += 5; }
 
-  let rightY = y;
-  if (invoice.notes) {
-    const nlines = doc.splitTextToSize(invoice.notes, rightEnd - rightColX);
-    doc.text(nlines, rightColX, rightY); rightY += nlines.length * 5;
-  } else {
-    doc.setTextColor(150, 150, 150);
-    doc.text("—", rightColX, rightY); rightY += 5;
-    doc.setTextColor(40, 40, 40);
-  }
-
-  y = Math.max(leftY, rightY) + 6;
-
+  y = leftY + 6;
   // ---------- ITEMS TABLE: # | DESCRIPTION | QTY | TOTAL ----------
-  autoTable(doc, {
+ autoTable(doc, {
     startY: y,
     margin: { left: leftStart, right: 14 },
     head: [["#", "DESCRIPTION", "QTY", "TOTAL"]],
     body: items.map((r, i) => [String(i + 1), r.item_name, String(r.quantity), fmtMoney(r.subtotal)]),
     theme: "plain",
-    headStyles: { fillColor: [pr, pg, pb], textColor: [thr, thg, thb], fontStyle: "bold", fontSize: 9, halign: "left" },
+    headStyles: { fillColor: [pr, pg, pb], textColor: [thr, thg, thb], fontStyle: "bold", fontSize: 9 },
     styles: { font: "helvetica", fontSize: 9, cellPadding: 2.6, textColor: [40, 40, 40] },
     columnStyles: {
       0: { halign: "left", cellWidth: 12 },
       1: { halign: "left" },
       2: { halign: "center", cellWidth: 20 },
       3: { halign: "right", cellWidth: 34 },
+    },
+    didParseCell: (data: any) => {
+      if (data.section === "head") {
+        if (data.column.index === 0) data.cell.styles.halign = "left";
+        if (data.column.index === 1) data.cell.styles.halign = "left";
+        if (data.column.index === 2) data.cell.styles.halign = "center";
+        if (data.column.index === 3) data.cell.styles.halign = "right";
+      }
     },
     didDrawCell: (data: any) => {
       if (data.section === "body") {
@@ -690,10 +681,9 @@ function buildTemplateAPdf(doc: jsPDF, invoice: Invoice, items: InvoiceItem[], c
         doc.addImage(c.signature_url, fmt, sigX, sigBaseY - 18, 50, 16);
       } catch (e) { console.warn("signature image failed", e); }
     }
-    doc.setDrawColor(pr, pg, pb); doc.setLineWidth(0.3); doc.line(sigX, sigBaseY, sigX + sigBlockW, sigBaseY);
+   doc.setDrawColor(pr, pg, pb); doc.setLineWidth(0.3); doc.line(sigX, sigBaseY, sigX + sigBlockW, sigBaseY);
     doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(0, 0, 0);
     doc.text("Authorized Signature", sigX, sigBaseY + 5);
-    doc.text(c.name, sigX, sigBaseY + 10);
   }
 
   return doc;
@@ -719,7 +709,11 @@ if (tpl === "summary-strip" || tpl === "corporate-blue" || tpl === "banner-green
 
   const leftStart = tpl === "modern" ? 56 : 14;
   const rightEnd = doc.internal.pageSize.getWidth() - 14;
-const startY = tpl === "modern" ? 50 : tpl === "elegant" ? 0 : 42;
+  const startY = tpl === "modern" ? 50 : tpl === "elegant" ? 0 : tpl === "bold" ? 58 : tpl === "executive" ? 48 : 42;
+
+
+
+
   const [pr, pg, pb] = hexToRgb(c.primary_color);
   const [ar, ag, ab] = hexToRgb(c.accent_color);
   const [tpR, tpG, tpB] = contrastOn(pr, pg, pb);
@@ -732,7 +726,8 @@ const startY = tpl === "modern" ? 50 : tpl === "elegant" ? 0 : 42;
 const darkHeaderTpls = ["classic", "bold", "corporate", "monochrome", "gradient", "industrial", "vibrant"];
 const sellerTextColor: [number, number, number] = darkHeaderTpls.includes(tpl) ? [tpR, tpG, tpB] : [80, 80, 80];
 doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...sellerTextColor);
-const contactStartY = tpl === "modern" ? 20 : tpl === "elegant" ? 22 : tpl === "bold" ? 18 : tpl === "corporate" ? 10 : tpl === "classic" ? 14 : tpl === "executive" ? 22 : tpl === "monochrome" ? 18 : tpl === "gradient" ? 18 : tpl === "geometric" ? 18 : tpl === "industrial" ? 14 : tpl === "minimal" ? 14 : 18;
+const contactStartY = tpl === "modern" ? 20 : tpl === "elegant" ? 22 : tpl === "bold" ? 18 : tpl === "corporate" ? 10 : tpl === "classic" ? 14 : tpl === "executive" ? 22 : tpl === "monochrome" ? 18 : tpl === "gradient" ? 18 : tpl === "geometric" ? 18 : tpl === "industrial" ? 14 : tpl === "minimal" ? 14 : tpl === "boxed" ? 13 : 18;
+
 let sellerRY = contactStartY;
 
 const sellerRows: { label: string; value: string }[] = [];
@@ -801,7 +796,12 @@ const metaY = tpl === "elegant"
   doc.setFont("helvetica", "normal"); doc.setFontSize(9);
   let yCursor = nameY + 4;
   if (invoice.customer_address) {
-    const lines = doc.splitTextToSize(invoice.customer_address, 100);
+    const cleanAddress = invoice.customer_address
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .join(", ");
+    const lines = doc.splitTextToSize(cleanAddress, 100);
     doc.text(lines, leftStart, yCursor); yCursor += lines.length * 4;
   }
   if (invoice.customer_tax_number) { doc.text(`HST: ${invoice.customer_tax_number}`, leftStart, yCursor); yCursor += 4; }
